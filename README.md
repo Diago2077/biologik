@@ -22,6 +22,13 @@ el `super_admin`, que las gestiona desde `/admindrpcs`.
 **Stack:** React + TypeScript + Vite · Tailwind v4 · React Router · Supabase
 (Postgres + Auth + Storage) · Vercel Serverless Functions · OpenAI Vision.
 
+## Documentacion
+
+| | |
+| --- | --- |
+| [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md) | **El mapa del proyecto**: como se sostiene el aislamiento por empresa, como funciona el conteo por IA, y que hace cada archivo. Empezar por aca. |
+| [docs/MIGRACION-GAVAC.md](docs/MIGRACION-GAVAC.md) | De donde viene el sistema, que se migro desde Gavac y donde estan los respaldos. |
+
 ## Roles
 
 | Rol | Alcance |
