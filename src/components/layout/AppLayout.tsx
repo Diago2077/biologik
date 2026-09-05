@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils'
 
 const NAV_INICIO = { to: '/', label: 'Inicio', end: true }
 const NAV_FINCAS = { to: '/fincas', label: 'Fincas', end: false }
+const NAV_VACUNACIONES = { to: '/vacunaciones', label: 'Vacunaciones', end: false }
 const NAV_USUARIOS = { to: '/usuarios', label: 'Usuarios', end: false }
 
 export default function AppLayout() {
@@ -22,7 +23,7 @@ export default function AppLayout() {
   // raso ni ve el link ni tiene acceso a esos datos (la RLS tambien lo corta).
   const NAV = [
     NAV_INICIO,
-    ...(esSuperAdmin ? [] : [NAV_FINCAS]),
+    ...(esSuperAdmin ? [] : [NAV_FINCAS, NAV_VACUNACIONES]),
     ...(perfil?.rol === 'usuario' ? [] : [NAV_USUARIOS]),
   ]
 

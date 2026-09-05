@@ -4,6 +4,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { AnimalFormModal } from '@/components/animales/AnimalFormModal'
 import { ConteoDetalleModal } from '@/components/conteos/ConteoDetalleModal'
+import { VacunacionAnimal } from '@/components/vacunaciones/VacunacionAnimal'
 import { Button } from '@/components/ui/button'
 import { Cargando, ErrorBox, Vacio } from '@/components/ui/estado'
 import { Modal } from '@/components/ui/modal'
@@ -25,7 +26,25 @@ export default function AnimalDetalle() {
   const [aEliminar, setAEliminar] = useState<Conteo | null>(null)
   const [eliminando, setEliminando] = useState(false)
 
-  const total = useMemo(() => conteos.reduce((suma, c) => suma + c.count_total, 0), [conteos])
+  /**
+   * Los conteos se agrupan por fecha: la carga del animal es lo que se le
+   * conto en UN dia sumando todas sus zonas. El acumulado historico no
+   * sirve como indicador -- solo crece con cada visita.
+   */
+  const muestreos = useMemo(() => {
+    const porFecha = new Map<string, number>()
+    for (const c of conteos) {
+      porFecha.set(c.fecha_conteo, (porFecha.get(c.fecha_conteo) ?? 0) + c.count_total)
+    }
+    return [...porFecha.entries()]
+      .map(([fecha, carga]) => ({ fecha, carga }))
+      .sort((a, b) => b.fecha.localeCompare(a.fecha))
+  }, [conteos])
+
+  const ultimaCarga = muestreos[0]?.carga ?? null
+  const promedioCarga = muestreos.length
+    ? Math.round(muestreos.reduce((s, m) => s + m.carga, 0) / muestreos.length)
+    : null
 
   async function confirmarEliminar() {
     if (!aEliminar) return
@@ -70,12 +89,22 @@ export default function AnimalDetalle() {
       </div>
 
       <div className="mb-5 grid gap-3 sm:grid-cols-3">
-        <Resumen etiqueta="Total garrapatas" valor={formatNumero(total)} destacado />
-        <Resumen etiqueta="Conteos" valor={formatNumero(conteos.length)} />
         <Resumen
-          etiqueta="Último conteo"
-          valor={conteos.length ? formatFecha(conteos[0].fecha_conteo) : '—'}
+          etiqueta="Última carga"
+          valor={ultimaCarga !== null ? formatNumero(ultimaCarga) : '—'}
+          nota={muestreos[0] ? formatFecha(muestreos[0].fecha) : 'Todavía sin conteos'}
+          destacado
         />
+        <Resumen
+          etiqueta="Promedio por muestreo"
+          valor={promedioCarga !== null ? formatNumero(promedioCarga) : '—'}
+          nota={`${muestreos.length} ${muestreos.length === 1 ? 'muestreo' : 'muestreos'}`}
+        />
+        <Resumen etiqueta="Fotos contadas" valor={formatNumero(conteos.length)} />
+      </div>
+
+      <div className="mb-5">
+        <VacunacionAnimal animalId={animal.id} />
       </div>
 
       {error && <ErrorBox mensaje={error} />}
@@ -199,10 +228,12 @@ export default function AnimalDetalle() {
 function Resumen({
   etiqueta,
   valor,
+  nota,
   destacado,
 }: {
   etiqueta: string
   valor: string
+  nota?: string
   destacado?: boolean
 }) {
   return (
@@ -216,6 +247,7 @@ function Resumen({
       >
         {valor}
       </p>
+      {nota && <p className="mt-0.5 text-xs text-muted-foreground">{nota}</p>}
     </div>
   )
 }

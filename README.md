@@ -12,7 +12,8 @@ empresas                          ← el limite de aislamiento
   ├── usuarios                    ← super_admin / admin / usuario
   └── fincas
         └── animales              ← identificados por numero de caravana
-              └── conteos         ← foto + total de garrapatas por zona
+              ├── conteos         ← foto + total de garrapatas por zona
+              └── vacunaciones    ← una fila por dosis aplicada
 ```
 
 Un usuario **solo ve datos de su empresa**. Eso no depende del frontend: lo

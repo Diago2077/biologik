@@ -12,6 +12,7 @@
  */
 
 import type { Database } from './database.generated'
+import type { Cronograma, ModoCronograma } from './vacunacion'
 
 export type Rol = 'super_admin' | 'admin' | 'usuario'
 
@@ -54,6 +55,8 @@ export interface Empresa {
   activo: boolean
   /** null = sin limite. Al superarlo en el mes, api/contar.ts corta el conteo por IA. */
   limite_tokens_mensual: number | null
+  /** Que hacer con las dosis siguientes cuando una se aplica fuera de termino. */
+  modo_cronograma_vacunacion: ModoCronograma
   created_at: string
 }
 
@@ -168,6 +171,24 @@ export interface Conteo {
   updated_at: string
 }
 
+/**
+ * Una dosis aplicada a un animal. El cronograma de las que faltan NO se
+ * guarda: se calcula desde estas filas (ver src/lib/vacunacion.ts).
+ */
+export interface Vacunacion {
+  id: string
+  empresa_id: string
+  animal_id: string
+  /** 1 = primera, 2 = refuerzo a los 30 dias, 3 = a los 180 de la primera, etc. */
+  numero_dosis: number
+  fecha_aplicada: string
+  producto: string | null
+  lote: string | null
+  observaciones: string | null
+  created_by: string | null
+  created_at: string
+}
+
 /** Campos que la base calcula sola y que no se mandan nunca en un insert/update. */
 type Generados = 'id' | 'created_at' | 'updated_at'
 
@@ -179,12 +200,43 @@ export type AnimalInsert = Omit<Animal, 'id' | 'created_at'>
 export type AnimalUpdate = Partial<AnimalInsert>
 export type EmpresaInsert = Omit<Empresa, 'id' | 'created_at'>
 export type EmpresaUpdate = Partial<EmpresaInsert>
+export type VacunacionInsert = Omit<Vacunacion, 'id' | 'created_at'>
 
-/** Animal con el resumen de sus conteos ya agregado, para el listado de la finca. */
-export interface AnimalConTotal extends Animal {
-  total_garrapatas: number
-  cantidad_conteos: number
+/**
+ * Un muestreo: lo que se le conto a UN animal en UNA fecha, sumando todas
+ * las zonas que se le fotografiaron ese dia.
+ *
+ * Es la unidad con la que hay que medir. El acumulado historico no sirve
+ * como indicador sanitario: solo crece con cada visita, asi que nunca podria
+ * mostrar que la carga bajo.
+ */
+export interface Muestreo {
+  fecha: string
+  /** Suma de las garrapatas de todas las zonas fotografiadas ese dia. */
+  carga: number
+  /** Cuantas zonas del cuerpo se fotografiaron. */
+  zonas: number
+}
+
+/** Animal con el resumen de sus muestreos, para el listado de la finca. */
+export interface AnimalConResumen extends Animal {
+  /** Carga del ultimo muestreo: cuan cargado esta HOY. */
+  ultima_carga: number | null
+  /** Promedio de la carga entre todos sus muestreos. */
+  promedio_carga: number | null
+  cantidad_muestreos: number
   ultimo_conteo: string | null
+  /** Estado del cronograma de vacunacion, ya resuelto. */
+  cronograma: Cronograma
+}
+
+/** Promedio de carga de una finca en una fecha de muestreo. */
+export interface MuestreoFinca {
+  fecha: string
+  /** Promedio de la carga entre los animales medidos ese dia. */
+  promedio: number
+  animales_medidos: number
+  total: number
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -209,6 +261,7 @@ export type ChequeoDeEsquema = [
   Afirmar<ColumnasExisten<Finca, Fila<'fincas'>>>,
   Afirmar<ColumnasExisten<Animal, Fila<'animales'>>>,
   Afirmar<ColumnasExisten<Conteo, Fila<'conteos'>>>,
+  Afirmar<ColumnasExisten<Vacunacion, Fila<'vacunaciones'>>>,
   Afirmar<ColumnasExisten<UsoIA, Fila<'uso_ia'>>>,
   Afirmar<ColumnasExisten<ConfiguracionIA, Fila<'configuracion_ia'>>>,
 ]

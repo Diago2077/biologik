@@ -15,11 +15,12 @@ persona revisa y corrige el numero, y queda registrado.
 Todo cuelga de una jerarquia de cuatro niveles:
 
 ```
-empresas                     ← el limite de aislamiento
-  ├── usuarios               super_admin / admin / usuario
-  └── fincas                 los establecimientos
-        └── animales         identificados por numero de caravana
-              └── conteos    una foto + el total de garrapatas de una zona
+empresas                       ← el limite de aislamiento
+  ├── usuarios                 super_admin / admin / usuario
+  └── fincas                   los establecimientos
+        └── animales           identificados por numero de caravana
+              ├── conteos      una foto + el total de garrapatas de una zona
+              └── vacunaciones una dosis aplicada, con su fecha
 ```
 
 **La empresa es la frontera.** Un usuario nunca ve datos de otra empresa, y eso
@@ -249,7 +250,88 @@ baratos: contarlos como plenos inflaria el costo que muestra el panel.
 
 ---
 
-## 6. Mapa de archivos
+## 6. El muestreo: la unidad con la que se mide
+
+Un `conteo` es **una foto de una zona**. El indicador sanitario no es esa fila
+suelta ni la suma de todas: es el **muestreo**, o sea lo que se le conto a un
+animal en **una fecha**, sumando las zonas que se le fotografiaron ese dia.
+
+```
+carga(animal, fecha)   = suma de las zonas de ese animal ese dia
+promedio(animal)       = promedio de sus cargas entre fechas
+promedio(finca, fecha) = promedio de la carga de los animales medidos ESE dia
+```
+
+Esta distincion no es cosmetica. Al principio la app mostraba el acumulado
+historico, y con una sola visita cargada daba el mismo numero. Pero ese total
+**solo crece con cada visita**: en la segunda medicion habria mostrado la suma
+de las dos, asi que nunca podria haber mostrado que la carga bajo despues de
+vacunar — que es justamente para lo que se usa el sistema.
+
+Dos detalles del calculo, en
+[`src/hooks/useAnimales.ts`](../src/hooks/useAnimales.ts):
+
+- **Se agrupa por animal y fecha ANTES de promediar.** Promediar las filas
+  sueltas daria el promedio por foto, no por animal.
+- **Los animales que no se midieron ese dia no entran en el promedio.**
+  Contarlos como cero lo hundiria y haria parecer que la carga bajo.
+
+---
+
+## 7. Vacunacion y su cronograma
+
+El plan, contado desde la primera dosis: **0, 30, 180, 360, 540…** dias. O
+sea, la 2da a los 30 dias, la 3ra a los 180 de la primera, y de ahi en mas cada
+180.
+
+**El cronograma no se guarda.** Se calcula desde las dosis efectivamente
+aplicadas, en [`src/lib/vacunacion.ts`](../src/lib/vacunacion.ts). Guardar las
+fechas previstas obligaria a reescribir filas cada vez que una dosis se aplica
+fuera de termino, y la fila que quedara sin actualizar mostraria una fecha
+mentirosa.
+
+### Que pasa cuando una dosis se aplica tarde
+
+Es una decision sanitaria, no tecnica, asi que la elige cada empresa
+(`empresas.modo_cronograma_vacunacion`, editable por el super_admin en la ficha
+de la empresa):
+
+| Modo | Que hace | Ejemplo: 1ra el 01/01, 2da tarde el 15/02 |
+| --- | --- | --- |
+| `reajustar` | Cuenta desde la fecha **real** de la anterior, respetando el intervalo. | 3ra el **15/07** (15/02 + 150) |
+| `anclar` | Cuenta siempre desde la 1ra dosis; el calendario no se mueve. | 3ra el **30/06** (01/01 + 180) |
+
+Como el intervalo nominal entre la 2da y la 3ra es de 150 dias (para que la 3ra
+caiga a los 180 de la primera), con todo en fecha los dos modos dan lo mismo:
+solo se separan cuando hay atraso.
+
+La logica esta cubierta por
+[`vacunacion.test.ts`](../src/lib/vacunacion.test.ts) — 16 casos, incluidos los
+dos modos, el cruce de fin de anio, el anio bisiesto y la carga imperfecta
+(dosis desordenadas, o una 3ra cargada sin la 1ra).
+
+### Estados y alertas
+
+`vencida` (la fecha ya paso) · `por_vencer` (dentro de 15 dias) · `al_dia` ·
+`sin_iniciar` (todavia no recibio la 1ra).
+
+El panel `/vacunaciones` lista todos los animales de la empresa ordenados por
+urgencia, e Inicio muestra un aviso cuando hay algo vencido o por vencer. Las
+dosis se registran desde la finca con **“Registrar vacunacion”**: una jornada
+sobre varios animales a la vez, con los que corresponden ya premarcados. Usa
+`upsert` para que recargar una jornada (porque faltaba un animal) no rompa
+contra el unique `(animal_id, numero_dosis)`.
+
+> **Pendiente de definicion:** falta decidir si los animales vacunados se
+> comparan contra un **grupo control** sin vacunar de la misma finca, y si se
+> cuentan todos los animales o solo una muestra centinela. Cualquiera de las
+> dos opciones agrega un nivel de agrupacion que hoy no existe. El modelo
+> actual —una fila por animal y dosis— no lo estorba: agregar grupos despues
+> no obliga a recargar nada.
+
+---
+
+## 8. Mapa de archivos
 
 ### Base de datos — `supabase/migrations/`
 
@@ -262,6 +344,7 @@ Se corren en orden en el SQL Editor. `005` va aparte (ver README).
 | `003_storage.sql` | Bucket `fotos` privado, limites de peso/tipo y su politica. |
 | `004_uso_ia.sql` | `uso_ia` (registro de consumo) y `configuracion_ia` (singleton). |
 | `005_super_admin.sql` | Alta del primer super_admin. Se corre a mano, una sola vez. |
+| `006_vacunaciones.sql` | `vacunaciones` (una fila por animal y dosis) y el modo de cronograma de la empresa. |
 
 ### Funciones serverless — `api/`
 
@@ -285,6 +368,7 @@ Se corren en orden en el SQL Editor. `005` va aparte (ver README).
 | `/fincas/:id` | `FincaDetalle.tsx` — animales de la finca con sus totales |
 | `/animales/:id` | `AnimalDetalle.tsx` — conteos del animal |
 | `/animales/:id/cargar` | `conteos/Cargar.tsx` — carga por lote |
+| `/vacunaciones` | `Vacunaciones.tsx` — panel de alertas, ordenado por urgencia |
 | `/empresa` | `Empresa.tsx` — datos de la empresa (solo lectura) |
 | `/usuarios` | `Usuarios.tsx` — no la ve el rol `usuario` |
 | `/admindrpcs` | `admin/Empresas.tsx` |
@@ -299,6 +383,8 @@ Se corren en orden en el SQL Editor. `005` va aparte (ver README).
 | `useFincas` / `useFinca` | Traduce el error de clave duplicada a "ya existe una finca con ese nombre". |
 | `useAnimales` / `useAnimal` | Arma el resumen por animal (total, cantidad, ultimo) con **dos selects planos** en vez de una vista o un rpc: evita mantener una funcion en la base sincronizada con el esquema. |
 | `useConteos` | Al borrar, elimina **primero la fila y despues la foto**: un archivo huerfano en Storage es menos grave que una fila apuntando a una foto que no existe. |
+| `useVacunaciones` | Dosis de un animal. `useVacunacionMasiva` carga una jornada entera de una vez, con `upsert` para poder recargarla sin romper contra el unique. |
+| `useVacunacionesPendientes` | Todos los animales de la empresa con su cronograma, ordenados por urgencia. Alimenta el panel de alertas. |
 | `useConteoAlta` | Las dos mitades del alta: `contar` y `guardar`. Si el insert falla despues de subir la foto, la borra — si no, quedaria ocupando lugar sin nada que la referencie. |
 | `useUsuarios` | Lista por RLS; las operaciones sensibles pasan por `/api`. |
 | `useEmpresas`, `useConfiguracionIA` | Solo utiles para el super_admin (RLS). |
@@ -312,6 +398,7 @@ Se corren en orden en el SQL Editor. `005` va aparte (ver README).
 | `database.generated.ts` | Generado con `npm run tipos`. Solo lo consume ese chequeo. |
 | `archivos.ts` | Validacion y reduccion de la imagen. Usa **2048 px**, mas que un lector de documentos: las garrapatas son manchas de pocos pixeles y bajar la resolucion las funde entre si. |
 | `conteo.ts` | El estado del formulario de revision y su validacion. |
+| `vacunacion.ts` | El calculo del cronograma, en funciones puras y con tests (`vacunacion.test.ts`). Ver seccion 6. |
 | `storage.ts` | Subida, borrado y URLs firmadas del bucket privado. |
 | `format.ts` | Fechas, numeros y RUC (con digito verificador que **avisa pero nunca bloquea**). |
 | `version.ts` | La version, inyectada desde `package.json` en el build. |
@@ -335,7 +422,7 @@ De `conteos/` vale la pena mirar:
 
 ---
 
-## 7. PWA y versionado
+## 9. PWA y versionado
 
 Subir el campo `version` de `package.json` es el **unico** paso para una
 release. El plugin `swVersionado` de [`vite.config.ts`](../vite.config.ts)
@@ -357,7 +444,7 @@ script y se vuelve a correr.
 
 ---
 
-## 8. Convenciones
+## 10. Convenciones
 
 - **Todo en castellano**: nombres de tablas, columnas, funciones, variables,
   componentes y comentarios. Es consistente de punta a punta.

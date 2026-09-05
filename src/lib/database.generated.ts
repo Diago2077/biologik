@@ -23,6 +23,7 @@ export interface Database {
           logo_url: string | null
           activo: boolean
           limite_tokens_mensual: number | null
+          modo_cronograma_vacunacion: string
           created_at: string | null
         }
         Insert: {
@@ -35,6 +36,7 @@ export interface Database {
           logo_url?: string | null
           activo?: boolean
           limite_tokens_mensual?: number | null
+          modo_cronograma_vacunacion?: string
           created_at?: string | null
         }
         Update: {
@@ -47,6 +49,7 @@ export interface Database {
           logo_url?: string | null
           activo?: boolean
           limite_tokens_mensual?: number | null
+          modo_cronograma_vacunacion?: string
           created_at?: string | null
         }
         Relationships: []
@@ -207,6 +210,45 @@ export interface Database {
           created_by?: string | null
           created_at?: string | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      vacunaciones: {
+        Row: {
+          id: string
+          empresa_id: string
+          animal_id: string
+          numero_dosis: number
+          fecha_aplicada: string
+          producto: string | null
+          lote: string | null
+          observaciones: string | null
+          created_by: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          empresa_id: string
+          animal_id: string
+          numero_dosis: number
+          fecha_aplicada: string
+          producto?: string | null
+          lote?: string | null
+          observaciones?: string | null
+          created_by?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          empresa_id?: string
+          animal_id?: string
+          numero_dosis?: number
+          fecha_aplicada?: string
+          producto?: string | null
+          lote?: string | null
+          observaciones?: string | null
+          created_by?: string | null
+          created_at?: string
         }
         Relationships: []
       }

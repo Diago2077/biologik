@@ -5,8 +5,9 @@ import { ConsumoIA } from '@/components/admin/ConsumoIA'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Cargando, ErrorBox, Vacio } from '@/components/ui/estado'
-import { Field, Input, Textarea } from '@/components/ui/field'
+import { Field, Input, Select, Textarea } from '@/components/ui/field'
 import { ConfirmModal, Modal } from '@/components/ui/modal'
+import { MODOS_CRONOGRAMA, type ModoCronograma } from '@/lib/vacunacion'
 import {
   CambiarPasswordModal,
   EditarUsuarioModal,
@@ -281,6 +282,7 @@ function EditarEmpresaModal({
   const [email, setEmail] = useState('')
   const [telefono, setTelefono] = useState('')
   const [direccion, setDireccion] = useState('')
+  const [modoCronograma, setModoCronograma] = useState<ModoCronograma>('reajustar')
   const [error, setError] = useState<string | null>(null)
   const [guardando, setGuardando] = useState(false)
 
@@ -291,6 +293,7 @@ function EditarEmpresaModal({
     setEmail(empresa.email ?? '')
     setTelefono(empresa.telefono ?? '')
     setDireccion(empresa.direccion ?? '')
+    setModoCronograma(empresa.modo_cronograma_vacunacion ?? 'reajustar')
     setError(null)
   }, [abierto, empresa])
 
@@ -307,6 +310,7 @@ function EditarEmpresaModal({
       email: email.trim() || null,
       telefono: telefono.trim() || null,
       direccion: direccion.trim() || null,
+      modo_cronograma_vacunacion: modoCronograma,
     }
     const { error: err } = await actualizar(empresa.id, cambios)
     setGuardando(false)
@@ -351,6 +355,21 @@ function EditarEmpresaModal({
         </div>
         <Field label="Direccion">
           <Textarea value={direccion} onChange={(e) => setDireccion(e.target.value)} rows={2} />
+        </Field>
+        <Field
+          label="Cronograma de vacunación cuando una dosis se aplica tarde"
+          hint={MODOS_CRONOGRAMA.find((m) => m.value === modoCronograma)?.descripcion}
+        >
+          <Select
+            value={modoCronograma}
+            onChange={(e) => setModoCronograma(e.target.value as ModoCronograma)}
+          >
+            {MODOS_CRONOGRAMA.map((m) => (
+              <option key={m.value} value={m.value}>
+                {m.label}
+              </option>
+            ))}
+          </Select>
         </Field>
         {error && <ErrorBox mensaje={error} />}
       </div>

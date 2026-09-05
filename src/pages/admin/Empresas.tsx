@@ -18,6 +18,8 @@ const EMPRESA_VACIA: EmpresaInsert = {
   direccion: '',
   logo_url: null,
   activo: true,
+  // El default de la base; se cambia desde la ficha de la empresa.
+  modo_cronograma_vacunacion: 'reajustar',
   limite_tokens_mensual: null,
 }
 

@@ -1,7 +1,8 @@
-import { Building2, MapPin, ShieldCheck, Users } from 'lucide-react'
+import { AlertTriangle, Building2, MapPin, ShieldCheck, Syringe, Users } from 'lucide-react'
 import { useEffect, useState, type ComponentType } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
+import { useVacunacionesPendientes } from '@/hooks/useVacunacionesPendientes'
 import { formatNumero } from '@/lib/format'
 import { supabase } from '@/lib/supabase'
 
@@ -22,6 +23,8 @@ interface Resumen {
 export default function Inicio() {
   const { perfil, empresa, esSuperAdmin } = useAuth()
   const [resumen, setResumen] = useState<Resumen | null>(null)
+  const { vencidas, porVencer } = useVacunacionesPendientes()
+  const pendientes = vencidas + porVencer
 
   useEffect(() => {
     let cancelado = false
@@ -59,6 +62,12 @@ export default function Inicio() {
             'Los establecimientos de la empresa. Desde acá se entra a los animales y a sus conteos de garrapatas.',
           icono: MapPin,
           destacado: true,
+        },
+        {
+          to: '/vacunaciones',
+          titulo: 'Vacunaciones',
+          descripcion: 'Cuándo le toca la próxima dosis a cada animal, y qué está vencido.',
+          icono: Syringe,
         },
       ]
 
@@ -108,6 +117,25 @@ export default function Inicio() {
               : ''}
         </p>
       </div>
+
+      {empresa && pendientes > 0 && (
+        <Link
+          to="/vacunaciones"
+          className="mb-5 flex items-start gap-3 rounded-lg border border-warning/30 bg-warning/5 px-4 py-3 transition-colors hover:bg-warning/10"
+        >
+          <AlertTriangle className="mt-0.5 size-4 shrink-0 text-warning" />
+          <div className="text-sm">
+            <p className="font-medium text-foreground">
+              {pendientes === 1 ? 'Hay 1 vacunación pendiente' : `Hay ${pendientes} vacunaciones pendientes`}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {vencidas > 0 && `${vencidas} ${vencidas === 1 ? 'vencida' : 'vencidas'}`}
+              {vencidas > 0 && porVencer > 0 && ' · '}
+              {porVencer > 0 && `${porVencer} por vencer en los próximos 15 días`}
+            </p>
+          </div>
+        </Link>
+      )}
 
       {empresa && resumen && (
         <div className="mb-7 grid gap-3 sm:grid-cols-3">

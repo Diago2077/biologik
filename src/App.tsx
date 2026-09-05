@@ -10,6 +10,7 @@ import Inicio from '@/pages/Inicio'
 import Login from '@/pages/Login'
 import NoEncontrado from '@/pages/NoEncontrado'
 import Usuarios from '@/pages/Usuarios'
+import Vacunaciones from '@/pages/Vacunaciones'
 import Cargar from '@/pages/conteos/Cargar'
 import ConfiguracionIA from '@/pages/admin/ConfiguracionIA'
 import EmpresaDetalle from '@/pages/admin/EmpresaDetalle'
@@ -27,6 +28,7 @@ export default function App() {
           <Route path="fincas/:id" element={<FincaDetalle />} />
           <Route path="animales/:id" element={<AnimalDetalle />} />
           <Route path="animales/:id/cargar" element={<Cargar />} />
+          <Route path="vacunaciones" element={<Vacunaciones />} />
           <Route path="empresa" element={<Empresa />} />
         </Route>
         <Route path="usuarios" element={<Usuarios />} />
