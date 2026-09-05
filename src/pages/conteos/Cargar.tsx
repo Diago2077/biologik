@@ -1,4 +1,13 @@
-import { AlertCircle, ArrowLeft, CheckCircle2, Loader2, RotateCcw, UploadCloud } from 'lucide-react'
+import {
+  AlertCircle,
+  ArrowLeft,
+  Camera,
+  CheckCircle2,
+  Images,
+  Loader2,
+  RotateCcw,
+  UploadCloud,
+} from 'lucide-react'
 import { useRef, useState, type ChangeEvent, type DragEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -63,6 +72,7 @@ export default function Cargar() {
   const [guardandoTodo, setGuardandoTodo] = useState(false)
   const [arrastrando, setArrastrando] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
+  const camaraRef = useRef<HTMLInputElement>(null)
 
   function actualizarItem(
     id: string,
@@ -272,11 +282,30 @@ export default function Cargar() {
               <Button
                 variant="outline"
                 size="sm"
+                onClick={() => camaraRef.current?.click()}
+                disabled={procesando}
+                className="sm:hidden"
+              >
+                <Camera /> Cámara
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => inputRef.current?.click()}
                 disabled={procesando}
               >
-                Agregar más
+                <Images className="sm:hidden" />
+                <span className="hidden sm:inline">Agregar más</span>
+                <span className="sm:hidden">Galería</span>
               </Button>
+              <input
+                ref={camaraRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="hidden"
+                onChange={onInputChange}
+              />
               <input
                 ref={inputRef}
                 type="file"
