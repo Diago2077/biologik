@@ -1,10 +1,8 @@
 import { AlertTriangle, Building2, MapPin, ShieldCheck, Syringe, Users } from 'lucide-react'
-import { useEffect, useState, type ComponentType } from 'react'
+import { type ComponentType } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { useVacunacionesPendientes } from '@/hooks/useVacunacionesPendientes'
-import { formatNumero } from '@/lib/format'
-import { supabase } from '@/lib/supabase'
 
 interface Modulo {
   to: string
@@ -14,41 +12,10 @@ interface Modulo {
   destacado?: boolean
 }
 
-interface Resumen {
-  fincas: number
-  animales: number
-  garrapatas: number
-}
-
 export default function Inicio() {
   const { perfil, empresa, esSuperAdmin } = useAuth()
-  const [resumen, setResumen] = useState<Resumen | null>(null)
   const { vencidas, porVencer } = useVacunacionesPendientes()
   const pendientes = vencidas + porVencer
-
-  useEffect(() => {
-    let cancelado = false
-
-    async function cargar() {
-      const [f, a, c] = await Promise.all([
-        supabase.from('fincas').select('*', { count: 'exact', head: true }),
-        supabase.from('animales').select('*', { count: 'exact', head: true }),
-        supabase.from('conteos').select('count_total'),
-      ])
-      if (cancelado) return
-      const totales = (c.data as { count_total: number }[] | null) ?? []
-      setResumen({
-        fincas: f.count ?? 0,
-        animales: a.count ?? 0,
-        garrapatas: totales.reduce((suma, fila) => suma + fila.count_total, 0),
-      })
-    }
-
-    cargar()
-    return () => {
-      cancelado = true
-    }
-  }, [])
 
   // Fincas/animales/conteos son de la empresa: el super_admin no tiene una
   // propia (la RLS le mostraria las de todas las empresas mezcladas).
@@ -137,14 +104,6 @@ export default function Inicio() {
         </Link>
       )}
 
-      {empresa && resumen && (
-        <div className="mb-7 grid gap-3 sm:grid-cols-3">
-          <Tarjeta etiqueta="Fincas" valor={formatNumero(resumen.fincas)} />
-          <Tarjeta etiqueta="Animales" valor={formatNumero(resumen.animales)} />
-          <Tarjeta etiqueta="Garrapatas contadas" valor={formatNumero(resumen.garrapatas)} destacado />
-        </div>
-      )}
-
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {modulos.map(({ to, titulo, descripcion, icono: Icono, destacado }) => (
           <Link
@@ -163,30 +122,6 @@ export default function Inicio() {
           </Link>
         ))}
       </div>
-    </div>
-  )
-}
-
-function Tarjeta({
-  etiqueta,
-  valor,
-  destacado,
-}: {
-  etiqueta: string
-  valor: string
-  destacado?: boolean
-}) {
-  return (
-    <div className="rounded-lg border border-border bg-card px-4 py-3">
-      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{etiqueta}</p>
-      <p
-        className={
-          'mt-1 text-2xl font-semibold tabular-nums ' +
-          (destacado ? 'text-primary' : 'text-foreground')
-        }
-      >
-        {valor}
-      </p>
     </div>
   )
 }
