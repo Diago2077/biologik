@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Cargando } from '@/components/ui/estado'
+import { useAuth } from '@/hooks/useAuth'
 import { useBanos } from '@/hooks/useBanos'
 import {
   banosUltimoAno,
@@ -22,6 +23,7 @@ import { BanoFormModal } from './BanoFormModal'
  * el productor.
  */
 export function BanosFinca({ fincaId }: { fincaId: string }) {
+  const { puedeEditar } = useAuth()
   const { data: banos, loading, refetch, crear, eliminar } = useBanos(fincaId)
   const [modal, setModal] = useState(false)
 
@@ -45,9 +47,11 @@ export function BanosFinca({ fincaId }: { fincaId: string }) {
           <Droplets className="size-4 text-muted-foreground" />
           <h2 className="text-sm font-semibold text-foreground">Baños acaricidas</h2>
         </div>
-        <Button variant="outline" size="sm" onClick={() => setModal(true)}>
-          <Plus /> Registrar baño
-        </Button>
+        {puedeEditar && (
+          <Button variant="outline" size="sm" onClick={() => setModal(true)}>
+            <Plus /> Registrar baño
+          </Button>
+        )}
       </div>
 
       {loading ? (
@@ -98,7 +102,7 @@ export function BanosFinca({ fincaId }: { fincaId: string }) {
                   <th className="px-4 py-2 font-medium">Fecha</th>
                   <th className="px-4 py-2 text-right font-medium">Desde el anterior</th>
                   <th className="px-4 py-2 font-medium">Producto</th>
-                  <th className="w-10 px-2 py-2" />
+                  {puedeEditar && <th className="w-10 px-2 py-2" />}
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -109,17 +113,19 @@ export function BanosFinca({ fincaId }: { fincaId: string }) {
                       {filas[i].dias === null ? '—' : `${filas[i].dias} días`}
                     </td>
                     <td className="px-4 py-2 text-muted-foreground">{b.producto || '—'}</td>
-                    <td className="px-2 py-2 text-right">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        aria-label="Eliminar baño"
-                        onClick={() => onEliminar(b.id)}
-                        className="text-muted-foreground hover:text-destructive"
-                      >
-                        <Trash2 />
-                      </Button>
-                    </td>
+                    {puedeEditar && (
+                      <td className="px-2 py-2 text-right">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          aria-label="Eliminar baño"
+                          onClick={() => onEliminar(b.id)}
+                          className="text-muted-foreground hover:text-destructive"
+                        >
+                          <Trash2 />
+                        </Button>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>

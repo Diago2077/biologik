@@ -29,11 +29,12 @@ export default function AppLayout() {
   // Fincas/animales/conteos son de la empresa: el super_admin no tiene una
   // (verlas todas mezcladas no tiene sentido, para eso esta /admindrpcs).
   // Gestionar usuarios es cosa de quien administra la empresa: un usuario
-  // raso ni ve el link ni tiene acceso a esos datos (la RLS tambien lo corta).
+  // raso o un lector ni ven el link ni tienen acceso a esos datos (la RLS
+  // tambien lo corta).
   const NAV = [
     NAV_INICIO,
     ...(esSuperAdmin ? [] : [NAV_FINCAS, NAV_VACUNACIONES]),
-    ...(perfil?.rol === 'usuario' ? [] : [NAV_USUARIOS]),
+    ...(perfil?.rol === 'usuario' || perfil?.rol === 'lector' ? [] : [NAV_USUARIOS]),
   ]
 
   useEffect(() => {

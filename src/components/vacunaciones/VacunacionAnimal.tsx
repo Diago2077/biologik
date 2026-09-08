@@ -14,7 +14,7 @@ function ordinal(n: number): string {
 
 /** Dosis aplicadas a un animal y cuando le toca la proxima. */
 export function VacunacionAnimal({ animalId }: { animalId: string }) {
-  const { empresa } = useAuth()
+  const { empresa, puedeEditar } = useAuth()
   const { data: dosis, loading, eliminar } = useVacunaciones(animalId)
 
   const cronograma = calcularCronograma(
@@ -58,7 +58,7 @@ export function VacunacionAnimal({ animalId }: { animalId: string }) {
               <th className="px-4 py-2 font-medium">Dosis</th>
               <th className="px-4 py-2 font-medium">Aplicada</th>
               <th className="px-4 py-2 font-medium">Producto</th>
-              <th className="w-10 px-2 py-2" />
+              {puedeEditar && <th className="w-10 px-2 py-2" />}
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
@@ -69,17 +69,19 @@ export function VacunacionAnimal({ animalId }: { animalId: string }) {
                 <td className="px-4 py-2 text-muted-foreground">
                   {[d.producto, d.lote].filter(Boolean).join(' · ') || '—'}
                 </td>
-                <td className="px-2 py-2 text-right">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    aria-label="Eliminar dosis"
-                    onClick={() => onEliminar(d.id)}
-                    className="text-muted-foreground hover:text-destructive"
-                  >
-                    <Trash2 />
-                  </Button>
-                </td>
+                {puedeEditar && (
+                  <td className="px-2 py-2 text-right">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      aria-label="Eliminar dosis"
+                      onClick={() => onEliminar(d.id)}
+                      className="text-muted-foreground hover:text-destructive"
+                    >
+                      <Trash2 />
+                    </Button>
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>

@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Field, Input, Select, Textarea } from '@/components/ui/field'
 import { ImageLightbox } from '@/components/ui/image-lightbox'
 import { Modal } from '@/components/ui/modal'
+import { useAuth } from '@/hooks/useAuth'
 import { useConteos } from '@/hooks/useConteos'
 import { LADOS_CUERPO, type Conteo, type LadoCuerpo } from '@/lib/database.types'
 import { urlFirmada } from '@/lib/storage'
@@ -24,6 +25,7 @@ export function ConteoDetalleModal({
   onCerrar: () => void
   onGuardado: () => void
 }) {
+  const { puedeEditar } = useAuth()
   const { actualizar } = useConteos(conteo?.animal_id)
   const [url, setUrl] = useState<string | null>(null)
   const [lightbox, setLightbox] = useState(false)
@@ -90,18 +92,24 @@ export function ConteoDetalleModal({
       <Modal
         abierto={conteo !== null}
         titulo="Conteo"
-        descripcion="Corregí el total si al ver la foto en grande no coincide."
+        descripcion={puedeEditar ? 'Corregí el total si al ver la foto en grande no coincide.' : undefined}
         onCerrar={onCerrar}
         ancho="max-w-2xl"
         footer={
-          <>
-            <Button variant="outline" onClick={onCerrar} disabled={guardando}>
+          puedeEditar ? (
+            <>
+              <Button variant="outline" onClick={onCerrar} disabled={guardando}>
+                Cerrar
+              </Button>
+              <Button onClick={onGuardar} disabled={guardando}>
+                {guardando ? 'Guardando…' : 'Guardar cambios'}
+              </Button>
+            </>
+          ) : (
+            <Button variant="outline" onClick={onCerrar}>
               Cerrar
             </Button>
-            <Button onClick={onGuardar} disabled={guardando}>
-              {guardando ? 'Guardando…' : 'Guardar cambios'}
-            </Button>
-          </>
+          )
         }
       >
         <div className="grid gap-5 sm:grid-cols-2">
@@ -126,6 +134,7 @@ export function ConteoDetalleModal({
               <Select
                 value={form.lado_cuerpo}
                 onChange={(e) => setForm((f) => ({ ...f, lado_cuerpo: e.target.value as LadoCuerpo }))}
+                disabled={!puedeEditar}
               >
                 {LADOS_CUERPO.map((l) => (
                   <option key={l.value} value={l.value}>
@@ -142,6 +151,7 @@ export function ConteoDetalleModal({
                 inputMode="numeric"
                 value={form.count_total}
                 onChange={(e) => setForm((f) => ({ ...f, count_total: e.target.value }))}
+                disabled={!puedeEditar}
               />
             </Field>
 
@@ -150,6 +160,7 @@ export function ConteoDetalleModal({
                 type="date"
                 value={form.fecha_conteo}
                 onChange={(e) => setForm((f) => ({ ...f, fecha_conteo: e.target.value }))}
+                disabled={!puedeEditar}
               />
             </Field>
 
@@ -157,6 +168,7 @@ export function ConteoDetalleModal({
               <Textarea
                 value={form.observaciones}
                 onChange={(e) => setForm((f) => ({ ...f, observaciones: e.target.value }))}
+                disabled={!puedeEditar}
               />
             </Field>
           </div>

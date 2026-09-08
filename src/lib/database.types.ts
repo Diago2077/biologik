@@ -14,12 +14,13 @@
 import type { Database } from './database.generated'
 import type { Cronograma, ModoCronograma } from './vacunacion'
 
-export type Rol = 'super_admin' | 'admin' | 'usuario'
+export type Rol = 'super_admin' | 'admin' | 'usuario' | 'lector'
 
 export const ROL_LABEL: Record<Rol, string> = {
   super_admin: 'Super admin',
   admin: 'Admin',
   usuario: 'Usuario',
+  lector: 'Lector',
 }
 
 /**

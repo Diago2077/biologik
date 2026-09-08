@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Cargando, ErrorBox, Vacio } from '@/components/ui/estado'
 import { Modal } from '@/components/ui/modal'
 import { useAnimal } from '@/hooks/useAnimales'
+import { useAuth } from '@/hooks/useAuth'
 import { useConteos } from '@/hooks/useConteos'
 import { useFinca } from '@/hooks/useFincas'
 import { ladoLabel, type Conteo } from '@/lib/database.types'
@@ -17,6 +18,7 @@ import { formatFecha, formatNumero } from '@/lib/format'
 export default function AnimalDetalle() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const { puedeEditar } = useAuth()
   const { data: animal, loading: cargandoAnimal } = useAnimal(id)
   const { data: finca } = useFinca(animal?.finca_id)
   const { data: conteos, loading, error, refetch, eliminar } = useConteos(id)
@@ -78,14 +80,16 @@ export default function AnimalDetalle() {
             {[animal.categoria, animal.raza].filter(Boolean).join(' · ') || 'Sin categoría ni raza'}
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setModalAnimal(true)}>
-            <Pencil /> Editar
-          </Button>
-          <Button onClick={() => navigate(`/animales/${animal.id}/cargar`)}>
-            <Camera /> Cargar fotos
-          </Button>
-        </div>
+        {puedeEditar && (
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setModalAnimal(true)}>
+              <Pencil /> Editar
+            </Button>
+            <Button onClick={() => navigate(`/animales/${animal.id}/cargar`)}>
+              <Camera /> Cargar fotos
+            </Button>
+          </div>
+        )}
       </div>
 
       <div className="mb-5 grid gap-3 sm:grid-cols-3">
@@ -117,9 +121,11 @@ export default function AnimalDetalle() {
             titulo="Todavía no hay conteos"
             descripcion="Sacá o subí fotos de las zonas del cuerpo del animal: la IA cuenta las garrapatas y vos revisás el resultado antes de guardar."
             accion={
-              <Button onClick={() => navigate(`/animales/${animal.id}/cargar`)}>
-                <Camera /> Cargar fotos
-              </Button>
+              puedeEditar ? (
+                <Button onClick={() => navigate(`/animales/${animal.id}/cargar`)}>
+                  <Camera /> Cargar fotos
+                </Button>
+              ) : undefined
             }
           />
         </div>
@@ -134,7 +140,7 @@ export default function AnimalDetalle() {
                 <th className="px-4 py-2.5 text-right font-medium">Garrapatas</th>
                 <th className="px-4 py-2.5 font-medium">Fecha</th>
                 <th className="px-4 py-2.5 font-medium">Observaciones</th>
-                <th className="w-10 px-2 py-2.5" />
+                {puedeEditar && <th className="w-10 px-2 py-2.5" />}
               </tr>
             </thead>
             <tbody className="divide-y divide-border bg-card">
@@ -156,20 +162,22 @@ export default function AnimalDetalle() {
                   <td className="max-w-xs truncate px-4 py-3 text-muted-foreground">
                     {conteo.observaciones ?? '—'}
                   </td>
-                  <td className="px-2 py-2 text-right">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      aria-label="Eliminar conteo"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        setAEliminar(conteo)
-                      }}
-                      className="text-muted-foreground hover:text-destructive"
-                    >
-                      <Trash2 />
-                    </Button>
-                  </td>
+                  {puedeEditar && (
+                    <td className="px-2 py-2 text-right">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        aria-label="Eliminar conteo"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setAEliminar(conteo)
+                        }}
+                        className="text-muted-foreground hover:text-destructive"
+                      >
+                        <Trash2 />
+                      </Button>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>

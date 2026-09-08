@@ -10,15 +10,22 @@ import { conManejoDeErrores, error, exigeMetodo, leerBody, type ApiHandler } fro
  * directo contra PostgREST, protegido por la RLS.
  *
  * Puede llamar un super_admin (sin restricciones, cualquier estudio y
- * cualquier rol) o un admin de estudio (solo usuarios 'usuario' de SU
- * propia empresa: nunca otro admin, nunca otro estudio). El alcance del
+ * cualquier rol) o un admin de estudio (solo usuarios 'usuario'/'lector' de
+ * SU propia empresa: nunca otro admin, nunca otro estudio). El alcance del
  * admin se fuerza siempre del lado del servidor -- nunca se confia en el
  * empresa_id/rol que mande el cliente -- para que no pueda ampliarlo
  * manipulando la request.
  */
 
-const ROLES_PERMITIDOS = ['admin', 'usuario'] as const
+const ROLES_PERMITIDOS = ['admin', 'usuario', 'lector'] as const
+/** Roles que un admin de estudio puede repartir sin salirse de su alcance. */
+const ROLES_ASIGNABLES_POR_ADMIN = ['usuario', 'lector'] as const
 const LARGO_MINIMO_PASSWORD = 8
+
+/** El rol que pidio el cliente si esta entre las opciones dadas, si no 'usuario'. */
+function rolAcotado(pedido: string | undefined, opciones: readonly string[]): string {
+  return pedido && opciones.includes(pedido) ? pedido : 'usuario'
+}
 
 interface Body {
   accion?: 'crear' | 'editar' | 'eliminar' | 'password'
@@ -46,10 +53,13 @@ const handler: ApiHandler = async (req, res) => {
       const nombre = body.nombre?.trim()
       const email = body.email?.trim().toLowerCase()
       const password = body.password ?? ''
-      // Un admin solo puede dar de alta usuarios rasos en SU propio estudio:
-      // se ignora cualquier empresa_id/rol que mande el cliente.
+      // Un admin solo puede dar de alta usuario/lector en SU propio estudio:
+      // se ignora cualquier empresa_id que mande el cliente, y el rol se
+      // acota a lo asignable por un admin (nunca 'admin' ni 'super_admin').
       const empresaId = esAdminDeEstudio ? actor.empresa_id : body.empresa_id
-      const rol = esAdminDeEstudio ? 'usuario' : (body.rol ?? 'usuario')
+      const rol = esAdminDeEstudio
+        ? rolAcotado(body.rol, ROLES_ASIGNABLES_POR_ADMIN)
+        : (body.rol ?? 'usuario')
 
       if (!nombre) return error(res, 400, 'Falta el nombre.')
       if (!email) return error(res, 400, 'Falta el email.')
@@ -102,8 +112,10 @@ const handler: ApiHandler = async (req, res) => {
       const nombre = body.nombre?.trim()
       const email = body.email?.trim().toLowerCase()
       // Un admin nunca puede promover a alguien a 'admin': el rol que manda
-      // el cliente se ignora si el que edita es un admin de estudio.
-      const rol = esAdminDeEstudio ? 'usuario' : (body.rol ?? 'usuario')
+      // el cliente se acota a lo asignable por un admin si es quien edita.
+      const rol = esAdminDeEstudio
+        ? rolAcotado(body.rol, ROLES_ASIGNABLES_POR_ADMIN)
+        : (body.rol ?? 'usuario')
 
       if (!nombre) return error(res, 400, 'Falta el nombre.')
       if (!email) return error(res, 400, 'Falta el email.')
@@ -121,7 +133,7 @@ const handler: ApiHandler = async (req, res) => {
       if (objetivo.rol === 'super_admin') {
         return error(res, 403, 'No se puede editar a un super administrador desde la app.')
       }
-      if (esAdminDeEstudio && (objetivo.empresa_id !== actor.empresa_id || objetivo.rol !== 'usuario')) {
+      if (esAdminDeEstudio && (objetivo.empresa_id !== actor.empresa_id || objetivo.rol === 'admin')) {
         return error(res, 403, 'Solo podes editar usuarios de tu propio estudio.')
       }
 
@@ -168,7 +180,7 @@ const handler: ApiHandler = async (req, res) => {
       if (objetivo?.rol === 'super_admin') {
         return error(res, 403, 'No se puede eliminar a un super administrador desde la app.')
       }
-      if (esAdminDeEstudio && (!objetivo || objetivo.empresa_id !== actor.empresa_id || objetivo.rol !== 'usuario')) {
+      if (esAdminDeEstudio && (!objetivo || objetivo.empresa_id !== actor.empresa_id || objetivo.rol === 'admin')) {
         return error(res, 403, 'Solo podes eliminar usuarios de tu propio estudio.')
       }
 
@@ -194,7 +206,7 @@ const handler: ApiHandler = async (req, res) => {
           .select('rol, empresa_id')
           .eq('id', body.id)
           .maybeSingle()
-        if (!objetivo || objetivo.empresa_id !== actor.empresa_id || objetivo.rol !== 'usuario') {
+        if (!objetivo || objetivo.empresa_id !== actor.empresa_id || objetivo.rol === 'admin') {
           return error(res, 403, 'Solo podes cambiar la contrasena de usuarios de tu propio estudio.')
         }
       }

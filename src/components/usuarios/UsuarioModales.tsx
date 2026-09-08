@@ -17,20 +17,33 @@ import { formatFecha } from '@/lib/format'
  * (/admindrpcs/empresas/:id).
  *
  * La unica diferencia entre ambas es quien puede repartir roles: el
- * super_admin decide si el usuario nuevo es admin o usuario comun, mientras
- * que un admin de empresa solo puede dar de alta usuarios comunes -- si
- * pudiera crear otros admin, podria repartir su propio nivel de acceso. Esa
- * diferencia entra por `permiteElegirRol`; el resto del formulario es igual.
+ * super_admin puede dar de alta admin/usuario/lector, mientras que un admin
+ * de empresa solo puede repartir usuario/lector -- si pudiera crear otros
+ * admin, podria repartir su propio nivel de acceso. Esa diferencia entra por
+ * `permiteElegirRol` + `rolesAsignables`; el resto del formulario es igual.
  */
 
-type RolAsignable = 'admin' | 'usuario'
+type RolAsignable = 'admin' | 'usuario' | 'lector'
 
-function SelectorDeRol({ valor, onCambiar }: { valor: RolAsignable; onCambiar: (rol: RolAsignable) => void }) {
+const ROLES_ASIGNABLES_POR_DEFECTO: RolAsignable[] = ['usuario', 'lector']
+
+function SelectorDeRol({
+  valor,
+  opciones,
+  onCambiar,
+}: {
+  valor: RolAsignable
+  opciones: RolAsignable[]
+  onCambiar: (rol: RolAsignable) => void
+}) {
   return (
     <Field label="Rol">
       <Select value={valor} onChange={(e) => onCambiar(e.target.value as RolAsignable)}>
-        <option value="usuario">Usuario</option>
-        <option value="admin">Admin</option>
+        {opciones.map((rol) => (
+          <option key={rol} value={rol}>
+            {ROL_LABEL[rol]}
+          </option>
+        ))}
       </Select>
     </Field>
   )
@@ -40,6 +53,7 @@ export function NuevoUsuarioModal({
   abierto,
   empresaId,
   permiteElegirRol = false,
+  rolesAsignables = ROLES_ASIGNABLES_POR_DEFECTO,
   onCerrar,
   onCreado,
   crear,
@@ -47,6 +61,7 @@ export function NuevoUsuarioModal({
   abierto: boolean
   empresaId: string
   permiteElegirRol?: boolean
+  rolesAsignables?: RolAsignable[]
   onCerrar: () => void
   onCreado: () => void
   crear: ReturnType<typeof useUsuarios>['crear']
@@ -121,7 +136,9 @@ export function NuevoUsuarioModal({
             autoComplete="new-password"
           />
         </Field>
-        {permiteElegirRol && <SelectorDeRol valor={rol} onCambiar={setRol} />}
+        {permiteElegirRol && (
+          <SelectorDeRol valor={rol} opciones={rolesAsignables} onCambiar={setRol} />
+        )}
         {error && <ErrorBox mensaje={error} />}
       </div>
     </Modal>
@@ -200,12 +217,14 @@ export function UsuarioDetalleModal({
 export function EditarUsuarioModal({
   usuario,
   permiteElegirRol = false,
+  rolesAsignables = ROLES_ASIGNABLES_POR_DEFECTO,
   onCerrar,
   onGuardado,
   editar,
 }: {
   usuario: Usuario | null
   permiteElegirRol?: boolean
+  rolesAsignables?: RolAsignable[]
   onCerrar: () => void
   onGuardado: () => void
   editar: ReturnType<typeof useUsuarios>['editar']
@@ -220,7 +239,7 @@ export function EditarUsuarioModal({
     if (!usuario) return
     setNombre(usuario.nombre)
     setEmail(usuario.email)
-    setRol(usuario.rol === 'admin' ? 'admin' : 'usuario')
+    setRol(usuario.rol === 'admin' || usuario.rol === 'lector' ? usuario.rol : 'usuario')
     setError(null)
   }, [usuario])
 
@@ -269,7 +288,9 @@ export function EditarUsuarioModal({
         <Field label="Email *" hint="Es el email con el que inicia sesion: cambiarlo cambia su login.">
           <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
         </Field>
-        {permiteElegirRol && <SelectorDeRol valor={rol} onCambiar={setRol} />}
+        {permiteElegirRol && (
+          <SelectorDeRol valor={rol} opciones={rolesAsignables} onCambiar={setRol} />
+        )}
         {error && <ErrorBox mensaje={error} />}
       </div>
     </Modal>

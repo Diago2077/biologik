@@ -23,10 +23,11 @@ export default function Usuarios() {
   const navigate = useNavigate()
 
   // Ver quien tiene acceso al empresa es cosa de quien lo administra: un
-  // usuario raso ni entra a esta pantalla (la RLS tampoco le deja leer la
-  // lista, esto solo evita que se quede mirando una pantalla vacia/rota).
+  // usuario raso o un lector ni entran a esta pantalla (la RLS tampoco les
+  // deja leer la lista, esto solo evita que se queden mirando una pantalla
+  // vacia/rota).
   useEffect(() => {
-    if (perfil && perfil.rol === 'usuario') navigate('/', { replace: true })
+    if (perfil && (perfil.rol === 'usuario' || perfil.rol === 'lector')) navigate('/', { replace: true })
   }, [perfil, navigate])
 
   const { data, loading, error, refetch, crear, editar, eliminar, cambiarPassword, setActivo } = useUsuarios(
@@ -47,7 +48,7 @@ export default function Usuarios() {
   const [modalPassword, setModalPassword] = useState<Usuario | null>(null)
   const [modalEliminar, setModalEliminar] = useState<Usuario | null>(null)
 
-  if (perfil?.rol === 'usuario') return null
+  if (perfil?.rol === 'usuario' || perfil?.rol === 'lector') return null
 
   return (
     <div>
@@ -100,9 +101,9 @@ export default function Usuarios() {
             </thead>
             <tbody>
               {filtrados.map((u) => {
-                // Un admin solo puede administrar usuarios 'usuario': a otro
+                // Un admin solo puede administrar usuario/lector: a otro
                 // admin (o a si mismo) lo ve, pero la fila no abre el detalle.
-                const clickeable = puedeGestionar && u.rol === 'usuario'
+                const clickeable = puedeGestionar && u.rol !== 'admin'
                 return (
                   <tr
                     key={u.id}
@@ -132,6 +133,8 @@ export default function Usuarios() {
           <NuevoUsuarioModal
             abierto={modalNuevo}
             empresaId={empresa.id}
+            permiteElegirRol
+            rolesAsignables={['usuario', 'lector']}
             onCerrar={() => setModalNuevo(false)}
             onCreado={() => {
               setModalNuevo(false)
@@ -170,6 +173,8 @@ export default function Usuarios() {
 
           <EditarUsuarioModal
             usuario={modalEditar}
+            permiteElegirRol
+            rolesAsignables={['usuario', 'lector']}
             onCerrar={() => setModalEditar(null)}
             onGuardado={() => {
               setModalEditar(null)

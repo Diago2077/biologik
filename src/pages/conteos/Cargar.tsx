@@ -8,7 +8,7 @@ import {
   RotateCcw,
   UploadCloud,
 } from 'lucide-react'
-import { useRef, useState, type ChangeEvent, type DragEvent } from 'react'
+import { useEffect, useRef, useState, type ChangeEvent, type DragEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { CapturaFoto } from '@/components/conteos/CapturaFoto'
@@ -16,6 +16,7 @@ import { RevisionConteoCard } from '@/components/conteos/RevisionConteoCard'
 import { Button } from '@/components/ui/button'
 import { Cargando, ErrorBox } from '@/components/ui/estado'
 import { useAnimal } from '@/hooks/useAnimales'
+import { useAuth } from '@/hooks/useAuth'
 import { useConteoAlta } from '@/hooks/useConteoAlta'
 import {
   EXTENSIONES_PERMITIDAS,
@@ -64,8 +65,15 @@ async function enTandas<T>(items: T[], limite: number, tarea: (item: T) => Promi
 export default function Cargar() {
   const { id: animalId } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const { puedeEditar } = useAuth()
   const { data: animal, loading: cargandoAnimal } = useAnimal(animalId)
   const { contar, guardar } = useConteoAlta()
+
+  // Un lector no carga fotos: la RLS igual bloquearia el insert en `conteos`,
+  // pero sin esto llegaria a ver el flujo entero de captura antes de fallar.
+  useEffect(() => {
+    if (!puedeEditar && animalId) navigate(`/animales/${animalId}`, { replace: true })
+  }, [puedeEditar, animalId, navigate])
 
   const [items, setItems] = useState<ItemLote[]>([])
   const [procesando, setProcesando] = useState(false)

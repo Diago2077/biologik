@@ -20,6 +20,8 @@ interface AuthState {
   empresa: Empresa | null
   loading: boolean
   esSuperAdmin: boolean
+  /** false para 'lector': puede ver todo de su empresa, pero no cargar/editar/eliminar nada. */
+  puedeEditar: boolean
   /**
    * Hay sesion valida pero algo impide usar la app:
    * - 'sin-perfil': la fila de `usuarios` no existe (se creo en el
@@ -195,6 +197,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       empresa,
       loading,
       esSuperAdmin: perfil?.rol === 'super_admin',
+      puedeEditar: perfil?.rol !== 'lector',
       problemaPerfil,
       signIn,
       signOut,

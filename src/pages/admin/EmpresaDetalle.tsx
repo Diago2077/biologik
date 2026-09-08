@@ -211,6 +211,7 @@ export default function EmpresaDetalle() {
         abierto={modalUsuario}
         empresaId={empresa.id}
         permiteElegirRol
+        rolesAsignables={['usuario', 'lector', 'admin']}
         onCerrar={() => setModalUsuario(false)}
         onCreado={() => {
           setModalUsuario(false)
@@ -250,6 +251,7 @@ export default function EmpresaDetalle() {
       <EditarUsuarioModal
         usuario={modalEditarUsuario}
         permiteElegirRol
+        rolesAsignables={['usuario', 'lector', 'admin']}
         onCerrar={() => setModalEditarUsuario(null)}
         onGuardado={() => {
           setModalEditarUsuario(null)

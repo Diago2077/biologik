@@ -19,7 +19,7 @@ import { textoRestante } from '@/lib/vacunacion'
 export default function FincaDetalle() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { empresa } = useAuth()
+  const { empresa, puedeEditar } = useAuth()
   const { data: finca, loading: cargandoFinca, refetch: refetchFinca } = useFinca(id)
   const { data: animales, muestreos, loading, error, refetch } = useAnimales(id)
   const umbral = empresa?.umbral_garrapatas ?? UMBRAL_POR_DEFECTO
@@ -63,17 +63,19 @@ export default function FincaDetalle() {
             {[finca.propietario, finca.ciudad].filter(Boolean).join(' · ') || 'Sin datos de contacto'}
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Button variant="outline" onClick={() => setModalFinca(true)}>
-            <Pencil /> Editar finca
-          </Button>
-          <Button variant="outline" onClick={() => setModalVacuna(true)} disabled={animales.length === 0}>
-            <Syringe /> Registrar vacunación
-          </Button>
-          <Button onClick={() => setModalAnimal(true)}>
-            <Plus /> Nuevo animal
-          </Button>
-        </div>
+        {puedeEditar && (
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={() => setModalFinca(true)}>
+              <Pencil /> Editar finca
+            </Button>
+            <Button variant="outline" onClick={() => setModalVacuna(true)} disabled={animales.length === 0}>
+              <Syringe /> Registrar vacunación
+            </Button>
+            <Button onClick={() => setModalAnimal(true)}>
+              <Plus /> Nuevo animal
+            </Button>
+          </div>
+        )}
       </div>
 
       {sobreUmbral > 0 && (
@@ -175,9 +177,11 @@ export default function FincaDetalle() {
             titulo="Todavía no hay animales"
             descripcion="Cargá el primer animal con su número de caravana para poder registrarle conteos y vacunaciones."
             accion={
-              <Button onClick={() => setModalAnimal(true)}>
-                <Plus /> Nuevo animal
-              </Button>
+              puedeEditar ? (
+                <Button onClick={() => setModalAnimal(true)}>
+                  <Plus /> Nuevo animal
+                </Button>
+              ) : undefined
             }
           />
         </div>

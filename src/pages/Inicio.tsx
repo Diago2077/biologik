@@ -40,9 +40,9 @@ export default function Inicio() {
         },
       ]
 
-  // Un usuario raso solo trabaja con fincas/animales/conteos: la gestion de
-  // usuarios es cosa de quien administra la empresa.
-  if (perfil?.rol !== 'usuario') {
+  // Un usuario raso o un lector solo trabajan con fincas/animales/conteos:
+  // la gestion de usuarios es cosa de quien administra la empresa.
+  if (perfil?.rol !== 'usuario' && perfil?.rol !== 'lector') {
     modulos.push({
       to: '/usuarios',
       titulo: 'Usuarios',

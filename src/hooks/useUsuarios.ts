@@ -38,7 +38,7 @@ export function useUsuarios(empresaId?: string) {
     nombre: string
     email: string
     password: string
-    rol: 'admin' | 'usuario'
+    rol: 'admin' | 'usuario' | 'lector'
   }) {
     try {
       await apiFetch('/api/admin/usuarios', { accion: 'crear', ...payload })
@@ -48,7 +48,7 @@ export function useUsuarios(empresaId?: string) {
     }
   }
 
-  async function editar(payload: { id: string; nombre: string; email: string; rol: 'admin' | 'usuario' }) {
+  async function editar(payload: { id: string; nombre: string; email: string; rol: 'admin' | 'usuario' | 'lector' }) {
     try {
       await apiFetch('/api/admin/usuarios', { accion: 'editar', ...payload })
       return { error: null }

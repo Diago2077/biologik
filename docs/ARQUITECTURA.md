@@ -16,7 +16,7 @@ Todo cuelga de una jerarquia de cuatro niveles:
 
 ```
 empresas                       ← el limite de aislamiento
-  ├── usuarios                 super_admin / admin / usuario
+  ├── usuarios                 super_admin / admin / usuario / lector
   └── fincas                   los establecimientos
         └── animales           identificados por numero de caravana
               ├── conteos      una foto + el total de garrapatas de una zona
@@ -132,8 +132,9 @@ a su carpeta usando el cliente de Supabase desde la consola.
 | Rol | Alcance |
 | --- | --- |
 | `super_admin` | Todas las empresas. Las crea, activa y desactiva, da de alta usuarios y configura la IA. **No tiene empresa propia**, asi que no ve fincas ni conteos. |
-| `admin` | Su empresa. Opera normalmente y ademas da de alta usuarios comunes de su empresa. |
-| `usuario` | Su empresa. Carga fincas, animales y conteos; no ve la gestion de usuarios. |
+| `admin` | Su empresa. Opera normalmente y ademas da de alta usuario/lector de su empresa (nunca otro admin). |
+| `usuario` | Su empresa. Carga fincas, animales, conteos, vacunaciones y banos; no ve la gestion de usuarios. |
+| `lector` | Su empresa, solo lectura. Ve exactamente lo mismo que `usuario`, pero no puede crear, editar ni eliminar nada — ni desde la UI (los botones de alta/edicion/borrado se ocultan) ni saltandola (la RLS lo bloquea igual, ver [009_lector.sql](../supabase/migrations/009_lector.sql)). Pensado para quien solo necesita consultar (el dueno del campo, un veterinario externo). |
 
 `usuarios` cuelga de `auth.users` compartiendo el `id`. El `super_admin` es el
 unico con `empresa_id` nulo, y un `check` lo obliga: cualquier otro rol necesita
@@ -141,6 +142,14 @@ empresa.
 
 **No hay auto-registro.** Las cuentas las crea el super_admin (o un admin,
 dentro de su empresa) desde la app.
+
+**`lector` es solo-lectura de verdad, no solo en la UI.** Las policies de
+`fincas`/`animales`/`conteos`/`vacunaciones`/`banos` que antes eran un unico
+`for all` por tabla se separaron en lectura (todos los roles de la empresa) y
+escritura (`insert`/`update`/`delete`, con un helper `puede_editar()` —
+`rol <> 'lector'` — sumado a la condicion de empresa). Un `lector` que llame a
+la API de Supabase directo, saltando la app, se encuentra el mismo 403 que
+cualquier intento de escribir fuera de su empresa.
 
 ### `useAuth` — el estado de sesion
 
@@ -429,6 +438,7 @@ Se corren en orden en el SQL Editor. `005` va aparte (ver README).
 | `006_vacunaciones.sql` | `vacunaciones` (una fila por animal y dosis) y el modo de cronograma de la empresa. |
 | `007_banos.sql` | `banos` (baños acaricidas por finca) y los parametros del programa: umbral y dias entre dosis. |
 | `008_notificaciones.sql` | `push_subscripciones`: el endpoint que cada dispositivo entrega al suscribirse a push. |
+| `009_lector.sql` | Rol `lector`: el `check` de `usuarios.rol`, el helper `puede_editar()`, y separa las policies de las cinco tablas de dominio en lectura/escritura. |
 
 ### Funciones serverless — `api/`
 
@@ -437,7 +447,7 @@ Se corren en orden en el SQL Editor. `005` va aparte (ver README).
 | `_lib/http.ts` | Tipos y helpers minimos. No usa `@vercel/node` para no arrastrar cien dependencias por dos interfaces. `conManejoDeErrores` garantiza que toda excepcion termine en JSON y no en la pagina de error de Vercel, que romperia el parseo del cliente. |
 | `_lib/auth.ts` | Valida el JWT **del lado del servidor** y devuelve el perfil. `exigeUsuario` / `exigeGestorDeUsuarios` / `exigeSuperAdmin` son los tres niveles. |
 | `contar.ts` | El conteo por IA (seccion 5). |
-| `admin/usuarios.ts` | Alta, edicion, borrado y cambio de contrasena de otros. El alcance de un `admin` —solo usuarios comunes de su propia empresa— **se fuerza en el servidor**: el `empresa_id` y el `rol` que mande el cliente se ignoran. |
+| `admin/usuarios.ts` | Alta, edicion, borrado y cambio de contrasena de otros. El alcance de un `admin` —solo usuario/lector de su propia empresa, nunca otro admin— **se fuerza en el servidor**: el `empresa_id` y el `rol` que mande el cliente se acotan del lado del servidor. |
 | `cuenta/password.ts` | Cambiar la contrasena propia. El id sale del token, nunca del body. |
 | `cron/vacunaciones.ts` | Cron diario (seccion 8): manda push de vacunaciones pendientes. Se autentica con `CRON_SECRET`, no con un JWT. |
 
@@ -455,7 +465,7 @@ Se corren en orden en el SQL Editor. `005` va aparte (ver README).
 | `/animales/:id/cargar` | `conteos/Cargar.tsx` — carga por lote |
 | `/vacunaciones` | `Vacunaciones.tsx` — panel de alertas, ordenado por urgencia |
 | `/empresa` | `Empresa.tsx` — datos de la empresa (solo lectura) |
-| `/usuarios` | `Usuarios.tsx` — no la ve el rol `usuario` |
+| `/usuarios` | `Usuarios.tsx` — no la ven los roles `usuario` ni `lector` |
 | `/admindrpcs` | `admin/Empresas.tsx` |
 | `/admindrpcs/:id` | `admin/EmpresaDetalle.tsx` — usuarios y consumo de IA |
 | `/admindrpcs/configuracion-ia` | `admin/ConfiguracionIA.tsx` |

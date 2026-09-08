@@ -5,12 +5,14 @@ import { FincaFormModal } from '@/components/fincas/FincaFormModal'
 import { Button } from '@/components/ui/button'
 import { Cargando, ErrorBox, Vacio } from '@/components/ui/estado'
 import { Input } from '@/components/ui/field'
+import { useAuth } from '@/hooks/useAuth'
 import { useFincas } from '@/hooks/useFincas'
 import type { Finca } from '@/lib/database.types'
 import { normalizar } from '@/lib/format'
 
 export default function Fincas() {
   const navigate = useNavigate()
+  const { puedeEditar } = useAuth()
   const { data, loading, error, refetch } = useFincas()
   const [busqueda, setBusqueda] = useState('')
   const [modalAbierto, setModalAbierto] = useState(false)
@@ -38,9 +40,11 @@ export default function Fincas() {
             Los establecimientos de la empresa. Desde cada uno se entra a sus animales.
           </p>
         </div>
-        <Button onClick={abrirNueva}>
-          <Plus /> Nueva finca
-        </Button>
+        {puedeEditar && (
+          <Button onClick={abrirNueva}>
+            <Plus /> Nueva finca
+          </Button>
+        )}
       </div>
 
       {data.length > 0 && (
@@ -66,9 +70,11 @@ export default function Fincas() {
             titulo="Todavia no hay fincas"
             descripcion="Cargá la primera finca para empezar a registrar animales y sus conteos."
             accion={
-              <Button onClick={abrirNueva}>
-                <Plus /> Nueva finca
-              </Button>
+              puedeEditar ? (
+                <Button onClick={abrirNueva}>
+                  <Plus /> Nueva finca
+                </Button>
+              ) : undefined
             }
           />
         </div>
