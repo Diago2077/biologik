@@ -1,4 +1,4 @@
-import { supabase } from './supabase'
+import { apiFetch, supabase } from './supabase'
 
 /**
  * Notificaciones push del navegador.
@@ -95,4 +95,17 @@ export async function desactivarNotificaciones(): Promise<{ error: string | null
 
   const { error } = await supabase.from('push_subscripciones').delete().eq('endpoint', endpoint)
   return { error: error ? 'No se pudo dar de baja la suscripción.' : null }
+}
+
+/**
+ * Pide al servidor que mande un push de prueba a este usuario, sin esperar
+ * al cron diario ni necesitar una vacunacion vencida real.
+ */
+export async function enviarNotificacionDePrueba(): Promise<{ error: string | null }> {
+  try {
+    await apiFetch('/api/notificaciones/prueba', {})
+    return { error: null }
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : 'No se pudo enviar la prueba.' }
+  }
 }

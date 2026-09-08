@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import {
   activarNotificaciones,
   desactivarNotificaciones,
+  enviarNotificacionDePrueba,
   soportaPush,
   suscripcionActual,
 } from '@/lib/notificaciones'
@@ -44,5 +45,5 @@ export function useNotificaciones() {
     return { error }
   }, [perfil, empresa, suscripto])
 
-  return { soportado: soportaPush(), suscripto, cargando, alternar }
+  return { soportado: soportaPush(), suscripto, cargando, alternar, enviarPrueba: enviarNotificacionDePrueba }
 }

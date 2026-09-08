@@ -1,4 +1,4 @@
-import { Bell, BellOff, KeyRound, LogOut, ShieldCheck } from 'lucide-react'
+import { Bell, BellOff, KeyRound, LogOut, Send, ShieldCheck } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -18,12 +18,18 @@ export default function AppLayout() {
   const { user, perfil, empresa, loading, esSuperAdmin, problemaPerfil, signOut } = useAuth()
   const navigate = useNavigate()
   const [modalPassword, setModalPassword] = useState(false)
-  const { soportado, suscripto, cargando: cargandoNotif, alternar } = useNotificaciones()
+  const { soportado, suscripto, cargando: cargandoNotif, alternar, enviarPrueba } = useNotificaciones()
 
   async function onAlternarNotificaciones() {
     const { error } = await alternar()
     if (error) toast.error(error)
     else toast.success(suscripto ? 'Notificaciones desactivadas' : 'Notificaciones activadas')
+  }
+
+  async function onProbarNotificacion() {
+    const { error } = await enviarPrueba()
+    if (error) toast.error(error)
+    else toast.success('Notificación de prueba enviada')
   }
 
   // Fincas/animales/conteos son de la empresa: el super_admin no tiene una
@@ -116,6 +122,16 @@ export default function AppLayout() {
               <p className="text-xs font-medium text-foreground">{perfil?.nombre}</p>
               <p className="text-[11px] text-muted-foreground">{perfil?.email}</p>
             </div>
+            {!esSuperAdmin && soportado && suscripto && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onProbarNotificacion}
+                title="Enviar notificación de prueba"
+              >
+                <Send />
+              </Button>
+            )}
             {!esSuperAdmin && soportado && (
               <Button
                 variant="ghost"
