@@ -354,6 +354,22 @@ autentica distinto al resto de `/api`: exige el header
 `Authorization: Bearer $CRON_SECRET` que Vercel manda solo en sus propias
 invocaciones programadas, no un JWT de Supabase.
 
+**Probar sin esperar al cron.** El super_admin tiene un boton "Probar
+notificación" en la ficha de cada empresa (`/admindrpcs/:id`) que manda un
+push de verdad a todos los dispositivos suscriptos de esa empresa
+([`api/notificaciones/prueba-empresa.ts`](../api/notificaciones/prueba-empresa.ts)).
+Confirma que las claves VAPID estan bien cargadas sin depender de que exista
+una vacunacion vencida real ni de loguearse como un usuario de esa empresa.
+
+**El icono "badge" es un archivo aparte.** Android arma el icono chico de la
+barra de estado a partir del canal alfa del PNG, no de sus colores: el resto
+de los iconos tiene fondo solido, asi que usarlos ahi se ve como un cuadrado
+relleno. `scripts/generate-icons.mjs` genera ademas
+`public/icons/badge-96.png` -- el mismo glyph, sin el rectangulo de fondo,
+sobre transparente -- y el service worker lo usa en el campo `badge` de
+`showNotification` (`icon` sigue siendo el logo a color, para el cuerpo
+expandido de la notificacion).
+
 > **Sobre el "grupo control":** el protocolo del PCIG exige *inmunizar toda la
 > masa bovina de la propiedad* y *no introducir animales sin inmunizar*, asi
 > que **no puede haber un grupo testigo sin vacunar dentro de la misma finca**.

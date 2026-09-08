@@ -1,4 +1,4 @@
-import { ArrowLeft, Pencil, Plus, UserRound } from 'lucide-react'
+import { ArrowLeft, Pencil, Plus, Send, UserRound } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { ConsumoIA } from '@/components/admin/ConsumoIA'
@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Cargando, ErrorBox, Vacio } from '@/components/ui/estado'
 import { Field, Input, Select, Textarea } from '@/components/ui/field'
 import { ConfirmModal, Modal } from '@/components/ui/modal'
+import { enviarNotificacionDePruebaAEmpresa } from '@/lib/notificaciones'
 import { UMBRAL_POR_DEFECTO } from '@/lib/umbral'
 import {
   MODOS_CRONOGRAMA,
@@ -51,6 +52,7 @@ export default function EmpresaDetalle() {
   const [modalPassword, setModalPassword] = useState<Usuario | null>(null)
   const [modalEliminar, setModalEliminar] = useState<Usuario | null>(null)
   const [modalEditarEmpresa, setModalEditarEmpresa] = useState(false)
+  const [enviandoPrueba, setEnviandoPrueba] = useState(false)
 
   useEffect(() => {
     if (!id) return
@@ -83,6 +85,15 @@ export default function EmpresaDetalle() {
     toast.success(empresa.activo ? 'Empresa desactivada' : 'Empresa activada')
   }
 
+  async function onProbarNotificacion() {
+    if (!empresa) return
+    setEnviandoPrueba(true)
+    const { error } = await enviarNotificacionDePruebaAEmpresa(empresa.id)
+    setEnviandoPrueba(false)
+    if (error) toast.error(error)
+    else toast.success('Notificación de prueba enviada')
+  }
+
   if (cargandoEmpresa) return <Cargando />
   if (!empresa) return <ErrorBox mensaje="No se encontro la empresa." />
 
@@ -110,6 +121,14 @@ export default function EmpresaDetalle() {
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => setModalEditarEmpresa(true)}>
             <Pencil /> Editar
+          </Button>
+          <Button
+            variant="outline"
+            onClick={onProbarNotificacion}
+            disabled={enviandoPrueba}
+            title="Manda un push de prueba a todos los dispositivos suscriptos de esta empresa"
+          >
+            <Send /> {enviandoPrueba ? 'Enviando…' : 'Probar notificación'}
           </Button>
           <Button variant="outline" onClick={alternarActivoEmpresa}>
             {empresa.activo ? 'Desactivar empresa' : 'Activar empresa'}

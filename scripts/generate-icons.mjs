@@ -44,6 +44,13 @@ function svg({ rounded }) {
 const SVG_ROUNDED = svg({ rounded: true })
 const SVG_SQUARE = svg({ rounded: false })
 
+// El icono "badge" de las notificaciones push (Android): SIN fondo, solo el
+// glyph sobre transparente. Android arma el icono chico de la barra de
+// estado a partir del canal alfa del PNG, ignorando el color -- si el fondo
+// es opaco (como el resto de los iconos), termina rellenando todo el
+// cuadrado y se ve como una mancha solida en vez del dibujo.
+const SVG_BADGE = `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">${GLYPH}</svg>`
+
 mkdirSync('public/icons', { recursive: true })
 
 writeFileSync('public/logo.svg', SVG_ROUNDED)
@@ -55,6 +62,7 @@ const trabajos = [
   { svg: SVG_ROUNDED, size: 192, out: 'public/icons/icon-192.png' },
   { svg: SVG_ROUNDED, size: 512, out: 'public/icons/icon-512.png' },
   { svg: SVG_SQUARE, size: 512, out: 'public/icons/icon-512-maskable.png' },
+  { svg: SVG_BADGE, size: 96, out: 'public/icons/badge-96.png' },
 ]
 
 for (const t of trabajos) {

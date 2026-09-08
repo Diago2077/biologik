@@ -1,11 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import {
-  activarNotificaciones,
-  desactivarNotificaciones,
-  enviarNotificacionDePrueba,
-  soportaPush,
-  suscripcionActual,
-} from '@/lib/notificaciones'
+import { activarNotificaciones, desactivarNotificaciones, soportaPush, suscripcionActual } from '@/lib/notificaciones'
 import { useAuth } from './useAuth'
 
 /** Estado de la suscripción a notificaciones push de ESTE dispositivo. */
@@ -45,5 +39,5 @@ export function useNotificaciones() {
     return { error }
   }, [perfil, empresa, suscripto])
 
-  return { soportado: soportaPush(), suscripto, cargando, alternar, enviarPrueba: enviarNotificacionDePrueba }
+  return { soportado: soportaPush(), suscripto, cargando, alternar }
 }

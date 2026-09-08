@@ -39,7 +39,11 @@ self.addEventListener('push', (event) => {
     self.registration.showNotification(datos.titulo, {
       body: datos.cuerpo,
       icon: '/icons/icon-192.png',
-      badge: '/icons/icon-192.png',
+      // El badge (icono chico de la barra de estado en Android) necesita
+      // fondo transparente: Android lo arma a partir del canal alfa, y con
+      // el icono normal (fondo solido) se ve como un cuadrado relleno en
+      // vez del dibujo.
+      badge: '/icons/badge-96.png',
       data: { url: datos.url },
     }),
   )

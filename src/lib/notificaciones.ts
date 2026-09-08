@@ -98,12 +98,17 @@ export async function desactivarNotificaciones(): Promise<{ error: string | null
 }
 
 /**
- * Pide al servidor que mande un push de prueba a este usuario, sin esperar
- * al cron diario ni necesitar una vacunacion vencida real.
+ * Pide al servidor que mande un push de prueba a TODOS los dispositivos
+ * suscriptos de una empresa. Solo el super_admin puede pedirlo (ver
+ * api/notificaciones/prueba-empresa.ts); vive en el panel de administracion
+ * de empresas, no hace falta esperar al cron diario ni una vacunacion
+ * vencida real para confirmar que las notificaciones llegan.
  */
-export async function enviarNotificacionDePrueba(): Promise<{ error: string | null }> {
+export async function enviarNotificacionDePruebaAEmpresa(
+  empresaId: string,
+): Promise<{ error: string | null }> {
   try {
-    await apiFetch('/api/notificaciones/prueba', {})
+    await apiFetch('/api/notificaciones/prueba-empresa', { empresa_id: empresaId })
     return { error: null }
   } catch (e) {
     return { error: e instanceof Error ? e.message : 'No se pudo enviar la prueba.' }

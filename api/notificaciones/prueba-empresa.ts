@@ -1,13 +1,18 @@
 import webpush from 'web-push'
-import { clienteAdmin, exigeUsuario } from '../_lib/auth.js'
-import { conManejoDeErrores, error, exigeMetodo, type ApiHandler } from '../_lib/http.js'
+import { clienteAdmin, exigeSuperAdmin } from '../_lib/auth.js'
+import { conManejoDeErrores, error, exigeMetodo, leerBody, type ApiHandler } from '../_lib/http.js'
 
 /**
- * Manda una notificacion de prueba a TODAS las suscripciones (dispositivos)
- * del usuario que la pide. Sirve para confirmar que las claves VAPID estan
- * bien cargadas en Vercel sin tener que esperar al cron diario ni fabricar
- * una vacunacion vencida de mentira.
+ * Manda una notificacion de prueba a TODOS los dispositivos suscriptos de
+ * UNA empresa. Es la herramienta del super_admin para confirmar que las
+ * claves VAPID estan bien cargadas y que a los usuarios de esa empresa les
+ * llega de verdad, sin tener que loguearse como ellos ni esperar a que haya
+ * una vacunacion vencida real.
  */
+
+interface Body {
+  empresa_id?: string
+}
 
 interface FilaSuscripcion {
   endpoint: string
@@ -18,8 +23,11 @@ interface FilaSuscripcion {
 const handler: ApiHandler = async (req, res) => {
   if (!exigeMetodo(req, res, 'POST')) return
 
-  const perfil = await exigeUsuario(req, res)
-  if (!perfil) return
+  const actor = await exigeSuperAdmin(req, res)
+  if (!actor) return
+
+  const body = leerBody<Body>(req)
+  if (!body.empresa_id) return error(res, 400, 'Falta la empresa.')
 
   const publica = process.env.VAPID_PUBLIC_KEY
   const privada = process.env.VAPID_PRIVATE_KEY
@@ -33,11 +41,11 @@ const handler: ApiHandler = async (req, res) => {
   const { data: suscripciones } = await admin
     .from('push_subscripciones')
     .select('endpoint, p256dh, auth')
-    .eq('usuario_id', perfil.id)
+    .eq('empresa_id', body.empresa_id)
 
   const filas = (suscripciones as FilaSuscripcion[]) ?? []
   if (filas.length === 0) {
-    return error(res, 400, 'Este dispositivo no tiene notificaciones activadas.')
+    return error(res, 400, 'Esta empresa todavía no tiene ningún dispositivo con notificaciones activadas.')
   }
 
   const payload = JSON.stringify({
