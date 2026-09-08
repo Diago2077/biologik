@@ -1,4 +1,8 @@
-import { hoyISO } from './format'
+// La extension .js es necesaria: este archivo tambien lo importa
+// api/cron/vacunaciones.ts, y ahi corre bajo Node ESM nativo (sin bundler
+// de por medio) que exige la extension explicita en imports relativos. Vite
+// resuelve igual este mismo specifier contra format.ts sin problema.
+import { hoyISO } from './format.js'
 
 /**
  * Cronograma de vacunacion antigarrapata.

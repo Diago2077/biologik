@@ -1,5 +1,5 @@
-import { hoyISO } from './format'
-import { diasEntre } from './vacunacion'
+import { hoyISO } from './format.js'
+import { diasEntre } from './vacunacion.js'
 
 /**
  * Metricas de los baños acaricidas de una finca.
