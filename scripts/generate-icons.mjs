@@ -51,9 +51,23 @@ const SVG_SQUARE = svg({ rounded: false })
 // cuadrado y se ve como una mancha solida en vez del dibujo.
 const SVG_BADGE = `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">${GLYPH}</svg>`
 
+// El logo "principal" (navbar, login): version mas grafica del manual de
+// marca -- cuadrado sin redondear, un marco fino inset, y el glyph mas
+// grande llegando casi al marco (en vez del margen amplio de los iconos
+// chicos, pensados para leerse a 16-32px).
+const GLYPH_GRANDE = GLYPH.replace(
+  'translate(17, 19.27) scale(0.2176)',
+  'translate(10, 12.74) scale(0.2638)',
+)
+const SVG_PRINCIPAL = `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <rect width="100" height="100" fill="${PRIMARY}"/>
+  <rect x="6" y="6" width="88" height="88" fill="none" stroke="#ffffff" stroke-width="2"/>
+  ${GLYPH_GRANDE}
+</svg>`
+
 mkdirSync('public/icons', { recursive: true })
 
-writeFileSync('public/logo.svg', SVG_ROUNDED)
+writeFileSync('public/logo.svg', SVG_PRINCIPAL)
 writeFileSync('public/favicon.svg', SVG_ROUNDED)
 
 const trabajos = [
