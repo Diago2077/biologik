@@ -54,9 +54,14 @@ el que se uso.
 Copiar `.env.example` a `.env` y completar con los valores de
 **Project Settings → API**.
 
-Las `VITE_*` viajan al navegador y estan pensadas para eso. Las otras tres son
+Las `VITE_*` viajan al navegador y estan pensadas para eso. Las otras son
 **solo del servidor**: si a alguna se le pone el prefijo `VITE_`, la clave
 termina publicada dentro del bundle.
+
+Las variables de `VAPID_*` y `CRON_SECRET` son para las notificaciones push
+(ver [docs/ARQUITECTURA.md §8](docs/ARQUITECTURA.md)) y no hacen falta para
+correr la app en local: sin ellas, el boton de campana simplemente no
+aparece. Se generan una sola vez con `npx web-push generate-vapid-keys`.
 
 ### 3. Correr
 
@@ -67,11 +72,13 @@ npm run dev
 
 ## Deploy
 
-Vercel autodetecta Vite. Hay que cargar las cinco variables de entorno en
-**Settings → Environment Variables** (las tres del servidor sin prefijo).
+Vercel autodetecta Vite. Hay que cargar las variables de entorno en
+**Settings → Environment Variables** (las del servidor sin prefijo).
 
 El `vercel.json` reescribe todo hacia `index.html` **menos** `/api/*`, para que
 recargar con F5 en una ruta profunda no de 404 y las funciones sigan andando.
+Tambien programa el cron de notificaciones (`/api/cron/vacunaciones`, una vez
+al dia) — los crons **solo corren en producción**, no en preview deploys.
 
 ## PWA y versionado
 

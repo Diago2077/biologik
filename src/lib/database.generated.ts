@@ -306,6 +306,36 @@ export interface Database {
         }
         Relationships: []
       }
+      push_subscripciones: {
+        Row: {
+          id: string
+          usuario_id: string
+          empresa_id: string
+          endpoint: string
+          p256dh: string
+          auth: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          usuario_id: string
+          empresa_id: string
+          endpoint: string
+          p256dh: string
+          auth: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          usuario_id?: string
+          empresa_id?: string
+          endpoint?: string
+          p256dh?: string
+          auth?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
       banos: {
         Row: {
           id: string

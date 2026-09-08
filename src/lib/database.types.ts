@@ -211,6 +211,22 @@ export interface Bano {
   created_at: string
 }
 
+/**
+ * Lo que el navegador de UN dispositivo entrega al suscribirse a push
+ * (PushManager.subscribe). Un mismo usuario puede tener varias filas -- una
+ * por celular/PC en el que activo las notificaciones -- por eso la clave es
+ * el endpoint, no el usuario.
+ */
+export interface PushSubscripcion {
+  id: string
+  usuario_id: string
+  empresa_id: string
+  endpoint: string
+  p256dh: string
+  auth: string
+  created_at: string
+}
+
 /** Campos que la base calcula sola y que no se mandan nunca en un insert/update. */
 type Generados = 'id' | 'created_at' | 'updated_at'
 
@@ -224,6 +240,7 @@ export type EmpresaInsert = Omit<Empresa, 'id' | 'created_at'>
 export type EmpresaUpdate = Partial<EmpresaInsert>
 export type VacunacionInsert = Omit<Vacunacion, 'id' | 'created_at'>
 export type BanoInsert = Omit<Bano, 'id' | 'created_at'>
+export type PushSubscripcionInsert = Omit<PushSubscripcion, 'id' | 'created_at'>
 
 /**
  * Un muestreo: lo que se le conto a UN animal en UNA fecha, sumando todas
@@ -286,6 +303,7 @@ export type ChequeoDeEsquema = [
   Afirmar<ColumnasExisten<Conteo, Fila<'conteos'>>>,
   Afirmar<ColumnasExisten<Vacunacion, Fila<'vacunaciones'>>>,
   Afirmar<ColumnasExisten<Bano, Fila<'banos'>>>,
+  Afirmar<ColumnasExisten<PushSubscripcion, Fila<'push_subscripciones'>>>,
   Afirmar<ColumnasExisten<UsoIA, Fila<'uso_ia'>>>,
   Afirmar<ColumnasExisten<ConfiguracionIA, Fila<'configuracion_ia'>>>,
 ]

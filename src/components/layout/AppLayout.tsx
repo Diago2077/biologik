@@ -1,10 +1,12 @@
-import { KeyRound, LogOut, ShieldCheck } from 'lucide-react'
+import { Bell, BellOff, KeyRound, LogOut, ShieldCheck } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { toast } from 'sonner'
 import { CambiarMiPasswordModal } from '@/components/cuenta/CambiarMiPasswordModal'
 import { Button } from '@/components/ui/button'
 import { Cargando } from '@/components/ui/estado'
 import { useAuth } from '@/hooks/useAuth'
+import { useNotificaciones } from '@/hooks/useNotificaciones'
 import { cn } from '@/lib/utils'
 
 const NAV_INICIO = { to: '/', label: 'Inicio', end: true }
@@ -16,6 +18,13 @@ export default function AppLayout() {
   const { user, perfil, empresa, loading, esSuperAdmin, problemaPerfil, signOut } = useAuth()
   const navigate = useNavigate()
   const [modalPassword, setModalPassword] = useState(false)
+  const { soportado, suscripto, cargando: cargandoNotif, alternar } = useNotificaciones()
+
+  async function onAlternarNotificaciones() {
+    const { error } = await alternar()
+    if (error) toast.error(error)
+    else toast.success(suscripto ? 'Notificaciones desactivadas' : 'Notificaciones activadas')
+  }
 
   // Fincas/animales/conteos son de la empresa: el super_admin no tiene una
   // (verlas todas mezcladas no tiene sentido, para eso esta /admindrpcs).
@@ -107,6 +116,17 @@ export default function AppLayout() {
               <p className="text-xs font-medium text-foreground">{perfil?.nombre}</p>
               <p className="text-[11px] text-muted-foreground">{perfil?.email}</p>
             </div>
+            {!esSuperAdmin && soportado && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onAlternarNotificaciones}
+                disabled={cargandoNotif}
+                title={suscripto ? 'Desactivar notificaciones' : 'Activar notificaciones'}
+              >
+                {suscripto ? <Bell /> : <BellOff />}
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="icon"

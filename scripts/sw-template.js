@@ -24,6 +24,46 @@ self.addEventListener('activate', (event) => {
   )
 })
 
+// Notificaciones push: el payload lo arma api/cron/vacunaciones.ts como
+// { titulo, cuerpo, url }. Si por lo que sea no viene JSON valido, se
+// muestra igual un aviso generico en vez de no mostrar nada.
+self.addEventListener('push', (event) => {
+  let datos = { titulo: 'Biologik', cuerpo: 'Tenés novedades.', url: '/' }
+  try {
+    if (event.data) datos = { ...datos, ...event.data.json() }
+  } catch {
+    // datos se queda con el generico
+  }
+
+  event.waitUntil(
+    self.registration.showNotification(datos.titulo, {
+      body: datos.cuerpo,
+      icon: '/icons/icon-192.png',
+      badge: '/icons/icon-192.png',
+      data: { url: datos.url },
+    }),
+  )
+})
+
+// Al tocar la notificacion: si ya hay una pestana de la app abierta, la
+// enfoca y navega ahi (mejor que abrir una segunda); si no, abre una nueva.
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close()
+  const url = event.notification.data?.url || '/'
+
+  event.waitUntil(
+    (async () => {
+      const clientes = await self.clients.matchAll({ type: 'window', includeUncontrolled: true })
+      const existente = clientes.find((c) => c.url.startsWith(self.location.origin))
+      if (existente) {
+        existente.navigate(url)
+        return existente.focus()
+      }
+      return self.clients.openWindow(url)
+    })(),
+  )
+})
+
 self.addEventListener('fetch', (event) => {
   const { request } = event
   const url = new URL(request.url)

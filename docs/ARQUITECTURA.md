@@ -328,6 +328,32 @@ sobre varios animales a la vez, con los que corresponden ya premarcados. Usa
 `upsert` para que recargar una jornada (porque faltaba un animal) no rompa
 contra el unique `(animal_id, numero_dosis)`.
 
+### Notificaciones push
+
+El panel del navegador no sirve de nada si nadie lo mira. El boton de
+campana en el header (oculto si el navegador no soporta push, o si es
+`super_admin` -- no tiene empresa con vacunaciones) suscribe **este
+dispositivo** via `PushManager` y guarda el endpoint en
+`push_subscripciones` ([`src/lib/notificaciones.ts`](../src/lib/notificaciones.ts)).
+Es por dispositivo, no por usuario: activarlo en el celular no lo activa en
+la PC. En iOS, Safari solo entrega `PushManager` con la app instalada a la
+pantalla de inicio.
+
+El envio lo hace **un cron de Vercel, una vez al dia**
+([`api/cron/vacunaciones.ts`](../api/cron/vacunaciones.ts), programado en
+`vercel.json`): recorre las empresas, calcula el cronograma de cada animal
+reusando `calcularCronograma`/`planDeEmpresa` de `src/lib/vacunacion.ts` (se
+importa directo por ruta relativa; es TS puro, sin nada de navegador), y si
+hay vencidas o por vencer manda un resumen con `web-push` a todas las
+suscripciones activas de esa empresa. Las suscripciones que el navegador ya
+no reconoce (404/410 -- se desinstalo la app, se borraron datos del sitio)
+se borran solas ese mismo dia.
+
+No hay usuario logueado disparando el cron -- lo llama Vercel -- asi que se
+autentica distinto al resto de `/api`: exige el header
+`Authorization: Bearer $CRON_SECRET` que Vercel manda solo en sus propias
+invocaciones programadas, no un JWT de Supabase.
+
 > **Sobre el "grupo control":** el protocolo del PCIG exige *inmunizar toda la
 > masa bovina de la propiedad* y *no introducir animales sin inmunizar*, asi
 > que **no puede haber un grupo testigo sin vacunar dentro de la misma finca**.
@@ -386,6 +412,7 @@ Se corren en orden en el SQL Editor. `005` va aparte (ver README).
 | `005_super_admin.sql` | Alta del primer super_admin. Se corre a mano, una sola vez. |
 | `006_vacunaciones.sql` | `vacunaciones` (una fila por animal y dosis) y el modo de cronograma de la empresa. |
 | `007_banos.sql` | `banos` (baños acaricidas por finca) y los parametros del programa: umbral y dias entre dosis. |
+| `008_notificaciones.sql` | `push_subscripciones`: el endpoint que cada dispositivo entrega al suscribirse a push. |
 
 ### Funciones serverless — `api/`
 
@@ -396,6 +423,7 @@ Se corren en orden en el SQL Editor. `005` va aparte (ver README).
 | `contar.ts` | El conteo por IA (seccion 5). |
 | `admin/usuarios.ts` | Alta, edicion, borrado y cambio de contrasena de otros. El alcance de un `admin` —solo usuarios comunes de su propia empresa— **se fuerza en el servidor**: el `empresa_id` y el `rol` que mande el cliente se ignoran. |
 | `cuenta/password.ts` | Cambiar la contrasena propia. El id sale del token, nunca del body. |
+| `cron/vacunaciones.ts` | Cron diario (seccion 8): manda push de vacunaciones pendientes. Se autentica con `CRON_SECRET`, no con un JWT. |
 
 ### Frontend — `src/`
 
