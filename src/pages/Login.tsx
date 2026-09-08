@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { ErrorBox } from '@/components/ui/estado'
 import { Field, Input } from '@/components/ui/field'
 import { useAuth } from '@/hooks/useAuth'
+import { pedirPermisoPushSiEsLaPrimeraVez } from '@/lib/notificaciones'
 import { isSupabaseConfigured } from '@/lib/supabase'
 import { APP_VERSION } from '@/lib/version'
 
@@ -28,8 +29,16 @@ export default function Login() {
     setEnviando(true)
     const { error: err } = await signIn(email, password)
     setEnviando(false)
-    if (err) setError(err)
-    else navigate('/', { replace: true })
+    if (err) {
+      setError(err)
+      return
+    }
+    // Todavia dentro del gesto de "Ingresar": es el unico momento en que se
+    // puede pedir el permiso sin que el navegador lo trate como spam. La
+    // suscripcion en si (guardar el endpoint) la completa useNotificaciones
+    // solo cuando el perfil termine de cargar.
+    void pedirPermisoPushSiEsLaPrimeraVez()
+    navigate('/', { replace: true })
   }
 
   return (

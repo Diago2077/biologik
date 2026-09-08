@@ -17,6 +17,34 @@ export function soportaPush(): boolean {
   return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window
 }
 
+const CLAVE_YA_PREGUNTADO = 'biologik-push-preguntado'
+
+/**
+ * Pide el permiso de notificaciones (sin suscribir todavia) la primera vez
+ * que alguien inicia sesion en este dispositivo, aprovechando que el click
+ * en "Ingresar" todavia cuenta como gesto del usuario para el navegador --
+ * pedirlo mas tarde, ya renderizada la app, hace que Chrome lo trate como
+ * spam y lo bloquee en silencio.
+ *
+ * Solo pregunta si el permiso esta en su estado inicial ('default'): si ya
+ * fue concedido o rechazado antes, no hay nada que preguntar. La suscripcion
+ * en si (pedir el endpoint y guardarlo) la termina `useNotificaciones` solo,
+ * apenas haya perfil/empresa disponibles -- no necesita gesto.
+ */
+export async function pedirPermisoPushSiEsLaPrimeraVez(): Promise<void> {
+  if (!soportaPush()) return
+  if (Notification.permission !== 'default') return
+  if (localStorage.getItem(CLAVE_YA_PREGUNTADO)) return
+
+  localStorage.setItem(CLAVE_YA_PREGUNTADO, '1')
+  try {
+    await Notification.requestPermission()
+  } catch {
+    // Si el navegador lo rechaza (ej. no hay gesto valido), no pasa nada:
+    // la campanita en el header sigue disponible para pedirlo mas tarde.
+  }
+}
+
 /** El navegador convierte la clave VAPID a este formato para `subscribe`. */
 function base64UrlAUint8Array(base64Url: string): Uint8Array {
   const relleno = '='.repeat((4 - (base64Url.length % 4)) % 4)
