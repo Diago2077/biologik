@@ -3,6 +3,7 @@ import { type ComponentType } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { useVacunacionesPendientes } from '@/hooks/useVacunacionesPendientes'
+import { planDeEmpresa } from '@/lib/vacunacion'
 
 interface Modulo {
   to: string
@@ -16,6 +17,7 @@ export default function Inicio() {
   const { perfil, empresa, esSuperAdmin } = useAuth()
   const { vencidas, porVencer } = useVacunacionesPendientes()
   const pendientes = vencidas + porVencer
+  const diasAviso = planDeEmpresa(empresa).diasAviso
 
   // Fincas/animales/conteos son de la empresa: el super_admin no tiene una
   // propia (la RLS le mostraria las de todas las empresas mezcladas).
@@ -98,7 +100,7 @@ export default function Inicio() {
             <p className="text-xs text-muted-foreground">
               {vencidas > 0 && `${vencidas} ${vencidas === 1 ? 'vencida' : 'vencidas'}`}
               {vencidas > 0 && porVencer > 0 && ' · '}
-              {porVencer > 0 && `${porVencer} por vencer en los próximos 15 días`}
+              {porVencer > 0 && `${porVencer} por vencer en los próximos ${diasAviso} días`}
             </p>
           </div>
         </Link>

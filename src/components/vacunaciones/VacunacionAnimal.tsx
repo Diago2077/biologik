@@ -5,7 +5,7 @@ import { Cargando } from '@/components/ui/estado'
 import { useAuth } from '@/hooks/useAuth'
 import { useVacunaciones } from '@/hooks/useVacunaciones'
 import { formatFecha } from '@/lib/format'
-import { calcularCronograma, textoRestante, type ModoCronograma } from '@/lib/vacunacion'
+import { calcularCronograma, planDeEmpresa, textoRestante } from '@/lib/vacunacion'
 import { EstadoVacunacionBadge } from './EstadoBadge'
 
 function ordinal(n: number): string {
@@ -15,12 +15,11 @@ function ordinal(n: number): string {
 /** Dosis aplicadas a un animal y cuando le toca la proxima. */
 export function VacunacionAnimal({ animalId }: { animalId: string }) {
   const { empresa } = useAuth()
-  const modo: ModoCronograma = empresa?.modo_cronograma_vacunacion ?? 'reajustar'
   const { data: dosis, loading, eliminar } = useVacunaciones(animalId)
 
   const cronograma = calcularCronograma(
     dosis.map((d) => ({ numero_dosis: d.numero_dosis, fecha_aplicada: d.fecha_aplicada })),
-    modo,
+    planDeEmpresa(empresa),
   )
 
   async function onEliminar(id: string) {

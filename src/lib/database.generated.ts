@@ -24,6 +24,10 @@ export interface Database {
           activo: boolean
           limite_tokens_mensual: number | null
           modo_cronograma_vacunacion: string
+          umbral_garrapatas: number
+          dias_segunda_dosis: number
+          dias_refuerzo: number
+          dias_aviso_vacunacion: number
           created_at: string | null
         }
         Insert: {
@@ -37,6 +41,10 @@ export interface Database {
           activo?: boolean
           limite_tokens_mensual?: number | null
           modo_cronograma_vacunacion?: string
+          umbral_garrapatas?: number
+          dias_segunda_dosis?: number
+          dias_refuerzo?: number
+          dias_aviso_vacunacion?: number
           created_at?: string | null
         }
         Update: {
@@ -50,6 +58,10 @@ export interface Database {
           activo?: boolean
           limite_tokens_mensual?: number | null
           modo_cronograma_vacunacion?: string
+          umbral_garrapatas?: number
+          dias_segunda_dosis?: number
+          dias_refuerzo?: number
+          dias_aviso_vacunacion?: number
           created_at?: string | null
         }
         Relationships: []
@@ -290,6 +302,39 @@ export interface Database {
           tokens_total?: number
           tokens_cache?: number
           costo_usd?: number
+          created_at?: string
+        }
+        Relationships: []
+      }
+      banos: {
+        Row: {
+          id: string
+          empresa_id: string
+          finca_id: string
+          fecha: string
+          producto: string | null
+          observaciones: string | null
+          created_by: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          empresa_id: string
+          finca_id: string
+          fecha: string
+          producto?: string | null
+          observaciones?: string | null
+          created_by?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          empresa_id?: string
+          finca_id?: string
+          fecha?: string
+          producto?: string | null
+          observaciones?: string | null
+          created_by?: string | null
           created_at?: string
         }
         Relationships: []

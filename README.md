@@ -11,6 +11,7 @@ sin roles.
 empresas                          ← el limite de aislamiento
   ├── usuarios                    ← super_admin / admin / usuario
   └── fincas
+        ├── banos                 ← baños acaricidas de la finca
         └── animales              ← identificados por numero de caravana
               ├── conteos         ← foto + total de garrapatas por zona
               └── vacunaciones    ← una fila por dosis aplicada

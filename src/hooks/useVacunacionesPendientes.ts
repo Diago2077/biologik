@@ -1,12 +1,12 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { Animal, Finca } from '@/lib/database.types'
 import { supabase } from '@/lib/supabase'
 import {
   calcularCronograma,
   ordenUrgencia,
+  planDeEmpresa,
   type Cronograma,
   type DosisAplicada,
-  type ModoCronograma,
 } from '@/lib/vacunacion'
 import { useAuth } from './useAuth'
 
@@ -33,7 +33,8 @@ interface Estado {
  */
 export function useVacunacionesPendientes() {
   const { empresa } = useAuth()
-  const modo: ModoCronograma = empresa?.modo_cronograma_vacunacion ?? 'reajustar'
+  // Memoizado: es dependencia del useCallback de abajo.
+  const plan = useMemo(() => planDeEmpresa(empresa), [empresa])
   const [estado, setEstado] = useState<Estado>({ data: [], loading: true, error: null })
 
   const cargar = useCallback(async (): Promise<Estado> => {
@@ -58,12 +59,12 @@ export function useVacunacionesPendientes() {
       .map((animal) => ({
         animal,
         finca: porFinca.get(animal.finca_id) ?? null,
-        cronograma: calcularCronograma(dosisPorAnimal.get(animal.id) ?? [], modo),
+        cronograma: calcularCronograma(dosisPorAnimal.get(animal.id) ?? [], plan),
       }))
       .sort((a, b) => ordenUrgencia(a.cronograma) - ordenUrgencia(b.cronograma))
 
     return { data, loading: false, error: null }
-  }, [modo])
+  }, [plan])
 
   const refetch = useCallback(async () => {
     setEstado((s) => ({ ...s, loading: true, error: null }))

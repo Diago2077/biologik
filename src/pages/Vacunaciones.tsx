@@ -4,16 +4,24 @@ import { useNavigate } from 'react-router-dom'
 import { Cargando, ErrorBox, Vacio } from '@/components/ui/estado'
 import { Select } from '@/components/ui/field'
 import { EstadoVacunacionBadge } from '@/components/vacunaciones/EstadoBadge'
+import { useAuth } from '@/hooks/useAuth'
 import { useVacunacionesPendientes } from '@/hooks/useVacunacionesPendientes'
 import { formatFecha, formatNumero } from '@/lib/format'
-import { ESTADO_LABEL, textoRestante, type EstadoVacunacion } from '@/lib/vacunacion'
+import {
+  ESTADO_LABEL,
+  planDeEmpresa,
+  textoRestante,
+  type EstadoVacunacion,
+} from '@/lib/vacunacion'
 
 type Filtro = 'pendientes' | 'todos' | EstadoVacunacion
 
 export default function Vacunaciones() {
   const navigate = useNavigate()
+  const { empresa } = useAuth()
   const { data, loading, error, vencidas, porVencer } = useVacunacionesPendientes()
   const [filtro, setFiltro] = useState<Filtro>('pendientes')
+  const diasAviso = planDeEmpresa(empresa).diasAviso
 
   const filtrados = useMemo(() => {
     if (filtro === 'todos') return data
@@ -63,7 +71,7 @@ export default function Vacunaciones() {
             titulo={filtro === 'pendientes' ? 'No hay vacunaciones pendientes' : 'Sin resultados'}
             descripcion={
               filtro === 'pendientes'
-                ? 'Ningún animal tiene una dosis vencida ni por vencer en los próximos 15 días.'
+                ? `Ningún animal tiene una dosis vencida ni por vencer en los próximos ${diasAviso} días.`
                 : 'Probá con otro filtro.'
             }
           />

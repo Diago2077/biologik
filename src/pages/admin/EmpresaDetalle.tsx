@@ -7,7 +7,13 @@ import { Button } from '@/components/ui/button'
 import { Cargando, ErrorBox, Vacio } from '@/components/ui/estado'
 import { Field, Input, Select, Textarea } from '@/components/ui/field'
 import { ConfirmModal, Modal } from '@/components/ui/modal'
-import { MODOS_CRONOGRAMA, type ModoCronograma } from '@/lib/vacunacion'
+import { UMBRAL_POR_DEFECTO } from '@/lib/umbral'
+import {
+  MODOS_CRONOGRAMA,
+  PLAN_POR_DEFECTO,
+  planDeEmpresa,
+  type ModoCronograma,
+} from '@/lib/vacunacion'
 import {
   CambiarPasswordModal,
   EditarUsuarioModal,
@@ -283,6 +289,10 @@ function EditarEmpresaModal({
   const [telefono, setTelefono] = useState('')
   const [direccion, setDireccion] = useState('')
   const [modoCronograma, setModoCronograma] = useState<ModoCronograma>('reajustar')
+  const [diasSegunda, setDiasSegunda] = useState(String(PLAN_POR_DEFECTO.diasSegundaDosis))
+  const [diasRefuerzo, setDiasRefuerzo] = useState(String(PLAN_POR_DEFECTO.diasRefuerzo))
+  const [diasAviso, setDiasAviso] = useState(String(PLAN_POR_DEFECTO.diasAviso))
+  const [umbral, setUmbral] = useState(String(UMBRAL_POR_DEFECTO))
   const [error, setError] = useState<string | null>(null)
   const [guardando, setGuardando] = useState(false)
 
@@ -293,13 +303,32 @@ function EditarEmpresaModal({
     setEmail(empresa.email ?? '')
     setTelefono(empresa.telefono ?? '')
     setDireccion(empresa.direccion ?? '')
-    setModoCronograma(empresa.modo_cronograma_vacunacion ?? 'reajustar')
+    const plan = planDeEmpresa(empresa)
+    setModoCronograma(plan.modo)
+    setDiasSegunda(String(plan.diasSegundaDosis))
+    setDiasRefuerzo(String(plan.diasRefuerzo))
+    setDiasAviso(String(plan.diasAviso))
+    setUmbral(String(empresa.umbral_garrapatas ?? UMBRAL_POR_DEFECTO))
     setError(null)
   }, [abierto, empresa])
 
   async function onGuardar() {
     if (!nombre.trim()) {
       setError('El nombre de la empresa es obligatorio.')
+      return
+    }
+    const numeros = {
+      dias_segunda_dosis: Number(diasSegunda),
+      dias_refuerzo: Number(diasRefuerzo),
+      dias_aviso_vacunacion: Number(diasAviso),
+      umbral_garrapatas: Number(umbral),
+    }
+    if (numeros.dias_segunda_dosis < 1 || numeros.dias_refuerzo < 1 || numeros.umbral_garrapatas < 1) {
+      setError('Los días entre dosis y el umbral tienen que ser mayores a cero.')
+      return
+    }
+    if (numeros.dias_aviso_vacunacion < 0) {
+      setError('Los días de aviso no pueden ser negativos.')
       return
     }
     setGuardando(true)
@@ -311,6 +340,7 @@ function EditarEmpresaModal({
       telefono: telefono.trim() || null,
       direccion: direccion.trim() || null,
       modo_cronograma_vacunacion: modoCronograma,
+      ...numeros,
     }
     const { error: err } = await actualizar(empresa.id, cambios)
     setGuardando(false)
@@ -356,21 +386,67 @@ function EditarEmpresaModal({
         <Field label="Direccion">
           <Textarea value={direccion} onChange={(e) => setDireccion(e.target.value)} rows={2} />
         </Field>
-        <Field
-          label="Cronograma de vacunación cuando una dosis se aplica tarde"
-          hint={MODOS_CRONOGRAMA.find((m) => m.value === modoCronograma)?.descripcion}
-        >
-          <Select
-            value={modoCronograma}
-            onChange={(e) => setModoCronograma(e.target.value as ModoCronograma)}
-          >
-            {MODOS_CRONOGRAMA.map((m) => (
-              <option key={m.value} value={m.value}>
-                {m.label}
-              </option>
-            ))}
-          </Select>
-        </Field>
+        <div className="border-t border-border pt-4">
+          <h3 className="mb-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            Plan sanitario
+          </h3>
+          <div className="space-y-4">
+            <div className="grid gap-3 sm:grid-cols-3">
+              <Field label="Días 1ra → 2da dosis" hint="Gavac: 28">
+                <Input
+                  type="number"
+                  min={1}
+                  value={diasSegunda}
+                  onChange={(e) => setDiasSegunda(e.target.value)}
+                />
+              </Field>
+              <Field label="Días entre refuerzos" hint="Gavac: 180">
+                <Input
+                  type="number"
+                  min={1}
+                  value={diasRefuerzo}
+                  onChange={(e) => setDiasRefuerzo(e.target.value)}
+                />
+              </Field>
+              <Field label="Días de aviso previo">
+                <Input
+                  type="number"
+                  min={0}
+                  value={diasAviso}
+                  onChange={(e) => setDiasAviso(e.target.value)}
+                />
+              </Field>
+            </div>
+
+            <Field
+              label="Umbral de garrapatas"
+              hint="A partir de esta carga en el último muestreo, el animal se marca como que necesita baño acaricida."
+            >
+              <Input
+                type="number"
+                min={1}
+                value={umbral}
+                onChange={(e) => setUmbral(e.target.value)}
+              />
+            </Field>
+
+            <Field
+              label="Cuando una dosis se aplica tarde"
+              hint={MODOS_CRONOGRAMA.find((m) => m.value === modoCronograma)?.descripcion}
+            >
+              <Select
+                value={modoCronograma}
+                onChange={(e) => setModoCronograma(e.target.value as ModoCronograma)}
+              >
+                {MODOS_CRONOGRAMA.map((m) => (
+                  <option key={m.value} value={m.value}>
+                    {m.label}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+          </div>
+        </div>
         {error && <ErrorBox mensaje={error} />}
       </div>
     </Modal>

@@ -57,6 +57,12 @@ export interface Empresa {
   limite_tokens_mensual: number | null
   /** Que hacer con las dosis siguientes cuando una se aplica fuera de termino. */
   modo_cronograma_vacunacion: ModoCronograma
+  /** Carga a partir de la cual el animal necesita tratamiento acaricida. */
+  umbral_garrapatas: number
+  dias_segunda_dosis: number
+  /** La 3ra dosis cae a esta distancia de la 1ra, y de ahi en mas cada tanto. */
+  dias_refuerzo: number
+  dias_aviso_vacunacion: number
   created_at: string
 }
 
@@ -189,6 +195,22 @@ export interface Vacunacion {
   created_at: string
 }
 
+/**
+ * Un baño acaricida. Es un evento de finca, no de animal: el rodeo entero
+ * pasa por el baño en la misma jornada, y el intervalo entre baños --que es
+ * la metrica del programa-- es de la finca.
+ */
+export interface Bano {
+  id: string
+  empresa_id: string
+  finca_id: string
+  fecha: string
+  producto: string | null
+  observaciones: string | null
+  created_by: string | null
+  created_at: string
+}
+
 /** Campos que la base calcula sola y que no se mandan nunca en un insert/update. */
 type Generados = 'id' | 'created_at' | 'updated_at'
 
@@ -201,6 +223,7 @@ export type AnimalUpdate = Partial<AnimalInsert>
 export type EmpresaInsert = Omit<Empresa, 'id' | 'created_at'>
 export type EmpresaUpdate = Partial<EmpresaInsert>
 export type VacunacionInsert = Omit<Vacunacion, 'id' | 'created_at'>
+export type BanoInsert = Omit<Bano, 'id' | 'created_at'>
 
 /**
  * Un muestreo: lo que se le conto a UN animal en UNA fecha, sumando todas
@@ -262,6 +285,7 @@ export type ChequeoDeEsquema = [
   Afirmar<ColumnasExisten<Animal, Fila<'animales'>>>,
   Afirmar<ColumnasExisten<Conteo, Fila<'conteos'>>>,
   Afirmar<ColumnasExisten<Vacunacion, Fila<'vacunaciones'>>>,
+  Afirmar<ColumnasExisten<Bano, Fila<'banos'>>>,
   Afirmar<ColumnasExisten<UsoIA, Fila<'uso_ia'>>>,
   Afirmar<ColumnasExisten<ConfiguracionIA, Fila<'configuracion_ia'>>>,
 ]

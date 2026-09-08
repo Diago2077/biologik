@@ -8,6 +8,8 @@ import { Field, Input, Textarea } from '@/components/ui/field'
 import { Modal } from '@/components/ui/modal'
 import { useEmpresas } from '@/hooks/useEmpresas'
 import { formatRuc, normalizar } from '@/lib/format'
+import { UMBRAL_POR_DEFECTO } from '@/lib/umbral'
+import { PLAN_POR_DEFECTO } from '@/lib/vacunacion'
 import type { EmpresaInsert } from '@/lib/database.types'
 
 const EMPRESA_VACIA: EmpresaInsert = {
@@ -18,8 +20,12 @@ const EMPRESA_VACIA: EmpresaInsert = {
   direccion: '',
   logo_url: null,
   activo: true,
-  // El default de la base; se cambia desde la ficha de la empresa.
+  // Los defaults de la base; se cambian desde la ficha de la empresa.
   modo_cronograma_vacunacion: 'reajustar',
+  umbral_garrapatas: UMBRAL_POR_DEFECTO,
+  dias_segunda_dosis: PLAN_POR_DEFECTO.diasSegundaDosis,
+  dias_refuerzo: PLAN_POR_DEFECTO.diasRefuerzo,
+  dias_aviso_vacunacion: PLAN_POR_DEFECTO.diasAviso,
   limite_tokens_mensual: null,
 }
 

@@ -284,6 +284,12 @@ El plan, contado desde la primera dosis: **0, 30, 180, 360, 540…** dias. O
 sea, la 2da a los 30 dias, la 3ra a los 180 de la primera, y de ahi en mas cada
 180.
 
+Esos numeros son **configurables por empresa** (`dias_segunda_dosis`,
+`dias_refuerzo`, `dias_aviso_vacunacion`): el prospecto de Gavac indica la 2da a
+la semana 4 —28 dias— y refuerzos cada 6 meses, pero el veterinario puede
+trabajar con otros. `planDeEmpresa(empresa)` arma el plan y todo el calculo lo
+recibe como parametro; los valores de fabrica viven en `PLAN_POR_DEFECTO`.
+
 **El cronograma no se guarda.** Se calcula desde las dosis efectivamente
 aplicadas, en [`src/lib/vacunacion.ts`](../src/lib/vacunacion.ts). Guardar las
 fechas previstas obligaria a reescribir filas cada vez que una dosis se aplica
@@ -306,13 +312,13 @@ caiga a los 180 de la primera), con todo en fecha los dos modos dan lo mismo:
 solo se separan cuando hay atraso.
 
 La logica esta cubierta por
-[`vacunacion.test.ts`](../src/lib/vacunacion.test.ts) — 16 casos, incluidos los
-dos modos, el cruce de fin de anio, el anio bisiesto y la carga imperfecta
+[`vacunacion.test.ts`](../src/lib/vacunacion.test.ts): los dos modos, los dias
+configurables, el cruce de fin de anio, el anio bisiesto y la carga imperfecta
 (dosis desordenadas, o una 3ra cargada sin la 1ra).
 
 ### Estados y alertas
 
-`vencida` (la fecha ya paso) · `por_vencer` (dentro de 15 dias) · `al_dia` ·
+`vencida` (la fecha ya paso) · `por_vencer` (dentro de `diasAviso`) · `al_dia` ·
 `sin_iniciar` (todavia no recibio la 1ra).
 
 El panel `/vacunaciones` lista todos los animales de la empresa ordenados por
@@ -322,16 +328,50 @@ sobre varios animales a la vez, con los que corresponden ya premarcados. Usa
 `upsert` para que recargar una jornada (porque faltaba un animal) no rompa
 contra el unique `(animal_id, numero_dosis)`.
 
-> **Pendiente de definicion:** falta decidir si los animales vacunados se
-> comparan contra un **grupo control** sin vacunar de la misma finca, y si se
-> cuentan todos los animales o solo una muestra centinela. Cualquiera de las
-> dos opciones agrega un nivel de agrupacion que hoy no existe. El modelo
-> actual —una fila por animal y dosis— no lo estorba: agregar grupos despues
-> no obliga a recargar nada.
+> **Sobre el "grupo control":** el protocolo del PCIG exige *inmunizar toda la
+> masa bovina de la propiedad* y *no introducir animales sin inmunizar*, asi
+> que **no puede haber un grupo testigo sin vacunar dentro de la misma finca**.
+> Lo que se aparta es una **muestra centinela** sobre la que se cuentan las
+> garrapatas, porque contarlas en todo el rodeo no es practico. El modelo ya lo
+> soporta sin cambios: el animal que no se midio en una fecha simplemente no
+> entra en el promedio de ese muestreo (ver §6).
 
 ---
 
-## 8. Mapa de archivos
+## 8. Baños acaricidas: la metrica del programa
+
+El sistema no existe para contar garrapatas sino para demostrar que la
+vacunacion **reduce los tratamientos quimicos**. Los resultados publicados del
+programa se expresan siempre asi: en Venezuela los baños por animal/año bajaron
+83.7 %; en Colombia el intervalo entre baños paso de 120 a 244 dias.
+
+Por eso se registran los baños (`banos`, una fila por finca y jornada) y de
+ahi salen, en [`src/lib/banos.ts`](../src/lib/banos.ts):
+
+- **intervalo entre baños consecutivos** y su promedio,
+- **baños del ultimo año**,
+- **tendencia**: el promedio de los intervalos recientes contra el de los
+  previos. Si crece, cada vez hace falta bañar menos seguido — que es el ahorro
+  concreto que ve el productor.
+
+El baño es un evento de **finca**, no de animal: el rodeo entero pasa por el
+baño en la misma jornada, y guardarlo por animal multiplicaria las filas sin
+agregar informacion.
+
+### El umbral de infestacion
+
+El programa no baña por calendario sino **por nivel de infestacion**,
+justamente para espaciar los tratamientos todo lo que la carga real permita.
+`empresas.umbral_garrapatas` (20 por defecto) es la carga a partir de la cual un
+animal se marca como que necesita tratamiento; en la ficha de la finca aparece
+un aviso con cuantos animales lo superan y la columna de carga se pinta segun el
+nivel ([`src/lib/umbral.ts`](../src/lib/umbral.ts)). Al 70 % del umbral ya avisa
+en amarillo, para poder planificar el baño en vez de descubrirlo el dia que ya
+hay que hacerlo.
+
+---
+
+## 9. Mapa de archivos
 
 ### Base de datos — `supabase/migrations/`
 
@@ -345,6 +385,7 @@ Se corren en orden en el SQL Editor. `005` va aparte (ver README).
 | `004_uso_ia.sql` | `uso_ia` (registro de consumo) y `configuracion_ia` (singleton). |
 | `005_super_admin.sql` | Alta del primer super_admin. Se corre a mano, una sola vez. |
 | `006_vacunaciones.sql` | `vacunaciones` (una fila por animal y dosis) y el modo de cronograma de la empresa. |
+| `007_banos.sql` | `banos` (baños acaricidas por finca) y los parametros del programa: umbral y dias entre dosis. |
 
 ### Funciones serverless — `api/`
 
@@ -422,7 +463,7 @@ De `conteos/` vale la pena mirar:
 
 ---
 
-## 9. PWA y versionado
+## 10. PWA y versionado
 
 Subir el campo `version` de `package.json` es el **unico** paso para una
 release. El plugin `swVersionado` de [`vite.config.ts`](../vite.config.ts)
@@ -444,7 +485,7 @@ script y se vuelve a correr.
 
 ---
 
-## 10. Convenciones
+## 11. Convenciones
 
 - **Todo en castellano**: nombres de tablas, columnas, funciones, variables,
   componentes y comentarios. Es consistente de punta a punta.

@@ -1,7 +1,8 @@
-import { ArrowLeft, Beef, Pencil, Plus, Search, Syringe } from 'lucide-react'
+import { AlertTriangle, ArrowLeft, Beef, Pencil, Plus, Search, Syringe } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { AnimalFormModal } from '@/components/animales/AnimalFormModal'
+import { BanosFinca } from '@/components/banos/BanosFinca'
 import { FincaFormModal } from '@/components/fincas/FincaFormModal'
 import { Button } from '@/components/ui/button'
 import { Cargando, ErrorBox, Vacio } from '@/components/ui/estado'
@@ -9,15 +10,19 @@ import { Input } from '@/components/ui/field'
 import { EstadoVacunacionBadge } from '@/components/vacunaciones/EstadoBadge'
 import { VacunacionMasivaModal } from '@/components/vacunaciones/VacunacionMasivaModal'
 import { useAnimales } from '@/hooks/useAnimales'
+import { useAuth } from '@/hooks/useAuth'
 import { useFinca } from '@/hooks/useFincas'
 import { formatFecha, formatNumero, normalizar } from '@/lib/format'
+import { nivelInfestacion, UMBRAL_POR_DEFECTO } from '@/lib/umbral'
 import { textoRestante } from '@/lib/vacunacion'
 
 export default function FincaDetalle() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const { empresa } = useAuth()
   const { data: finca, loading: cargandoFinca, refetch: refetchFinca } = useFinca(id)
   const { data: animales, muestreos, loading, error, refetch } = useAnimales(id)
+  const umbral = empresa?.umbral_garrapatas ?? UMBRAL_POR_DEFECTO
 
   const [busqueda, setBusqueda] = useState('')
   const [modalAnimal, setModalAnimal] = useState(false)
@@ -34,6 +39,9 @@ export default function FincaDetalle() {
   const anterior = muestreos[1] ?? null
   const pendientes = animales.filter(
     (a) => a.cronograma.estado === 'vencida' || a.cronograma.estado === 'por_vencer',
+  ).length
+  const sobreUmbral = animales.filter(
+    (a) => a.ultima_carga !== null && a.ultima_carga >= umbral,
   ).length
 
   if (cargandoFinca) return <Cargando />
@@ -67,6 +75,22 @@ export default function FincaDetalle() {
           </Button>
         </div>
       </div>
+
+      {sobreUmbral > 0 && (
+        <div className="mb-5 flex items-start gap-3 rounded-lg border border-warning/30 bg-warning/5 px-4 py-3">
+          <AlertTriangle className="mt-0.5 size-4 shrink-0 text-warning" />
+          <div className="text-sm">
+            <p className="font-medium text-foreground">
+              {sobreUmbral === 1
+                ? '1 animal supera el umbral de infestación'
+                : `${sobreUmbral} animales superan el umbral de infestación`}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              El umbral está en {umbral} garrapatas por animal. Considerá un baño acaricida.
+            </p>
+          </div>
+        </div>
+      )}
 
       <div className="mb-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Resumen etiqueta="Animales" valor={formatNumero(animales.length)} />
@@ -126,6 +150,8 @@ export default function FincaDetalle() {
         </div>
       )}
 
+      <BanosFinca fincaId={finca.id} />
+
       {animales.length > 0 && (
         <div className="relative mb-4 max-w-sm">
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -177,8 +203,27 @@ export default function FincaDetalle() {
                   className="cursor-pointer select-none transition-colors hover:bg-accent/50 active:bg-accent"
                 >
                   <td className="px-4 py-3 font-medium text-foreground">{animal.caravana}</td>
-                  <td className="px-4 py-3 text-right tabular-nums font-medium text-foreground">
-                    {animal.ultima_carga ?? '—'}
+                  <td className="px-4 py-3 text-right tabular-nums font-medium">
+                    {animal.ultima_carga === null ? (
+                      <span className="text-foreground">—</span>
+                    ) : (
+                      <span
+                        className={
+                          nivelInfestacion(animal.ultima_carga, umbral) === 'supera'
+                            ? 'text-destructive'
+                            : nivelInfestacion(animal.ultima_carga, umbral) === 'cerca'
+                              ? 'text-warning'
+                              : 'text-foreground'
+                        }
+                        title={
+                          animal.ultima_carga >= umbral
+                            ? `Supera el umbral de ${umbral}`
+                            : undefined
+                        }
+                      >
+                        {animal.ultima_carga}
+                      </span>
+                    )}
                   </td>
                   <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">
                     {animal.promedio_carga ?? '—'}

@@ -4,11 +4,14 @@ import { hoyISO } from './format'
  * Cronograma de vacunacion antigarrapata.
  *
  *   1ra dosis  →  dia 0
- *   2da dosis  →  30 dias despues de la 1ra
- *   3ra dosis  →  180 dias despues de la 1ra
- *   siguientes →  cada 180 dias
+ *   2da dosis  →  `diasSegundaDosis` despues de la 1ra
+ *   3ra dosis  →  `diasRefuerzo` despues de la 1ra
+ *   siguientes →  cada `diasRefuerzo`
  *
- * O sea, contado desde la primera: 0, 30, 180, 360, 540, ...
+ * Con los valores por defecto, contado desde la primera: 0, 30, 180, 360...
+ * El prospecto de Gavac indica la 2da a la semana 4 (28 dias) y refuerzos
+ * cada 6 meses, pero los numeros los fija cada empresa: son una decision
+ * sanitaria, no una constante del sistema.
  *
  * Nada de esto se guarda en la base: se calcula a partir de las dosis
  * efectivamente aplicadas. Guardar las fechas previstas obligaria a
@@ -16,19 +19,54 @@ import { hoyISO } from './format'
  * fila que quedara sin actualizar mostraria una fecha mentirosa.
  */
 
+export type ModoCronograma = 'reajustar' | 'anclar'
+
+export interface PlanVacunacion {
+  /** Que hacer con las dosis siguientes cuando una se aplica fuera de termino. */
+  modo: ModoCronograma
+  diasSegundaDosis: number
+  diasRefuerzo: number
+  /** Dias de anticipacion con los que una dosis empieza a avisar. */
+  diasAviso: number
+}
+
+export const PLAN_POR_DEFECTO: PlanVacunacion = {
+  modo: 'reajustar',
+  diasSegundaDosis: 30,
+  diasRefuerzo: 180,
+  diasAviso: 15,
+}
+
+/** Lee el plan de la empresa, cayendo a los valores por defecto. */
+export function planDeEmpresa(empresa: {
+  modo_cronograma_vacunacion?: ModoCronograma | null
+  dias_segunda_dosis?: number | null
+  dias_refuerzo?: number | null
+  dias_aviso_vacunacion?: number | null
+} | null | undefined): PlanVacunacion {
+  if (!empresa) return PLAN_POR_DEFECTO
+  return {
+    modo: empresa.modo_cronograma_vacunacion ?? PLAN_POR_DEFECTO.modo,
+    diasSegundaDosis: empresa.dias_segunda_dosis ?? PLAN_POR_DEFECTO.diasSegundaDosis,
+    diasRefuerzo: empresa.dias_refuerzo ?? PLAN_POR_DEFECTO.diasRefuerzo,
+    diasAviso: empresa.dias_aviso_vacunacion ?? PLAN_POR_DEFECTO.diasAviso,
+  }
+}
+
 /** Dias desde la 1ra dosis a los que corresponde cada dosis. */
-export function diasDesdePrimera(dosis: number): number {
+export function diasDesdePrimera(dosis: number, plan: PlanVacunacion = PLAN_POR_DEFECTO): number {
   if (dosis <= 1) return 0
-  if (dosis === 2) return 30
-  return 180 * (dosis - 2)
+  if (dosis === 2) return plan.diasSegundaDosis
+  return plan.diasRefuerzo * (dosis - 2)
 }
 
 /** Dias que separan una dosis de la siguiente, segun el plan. */
-export function intervaloHastaSiguiente(dosis: number): number {
-  return diasDesdePrimera(dosis + 1) - diasDesdePrimera(dosis)
+export function intervaloHastaSiguiente(
+  dosis: number,
+  plan: PlanVacunacion = PLAN_POR_DEFECTO,
+): number {
+  return diasDesdePrimera(dosis + 1, plan) - diasDesdePrimera(dosis, plan)
 }
-
-export type ModoCronograma = 'reajustar' | 'anclar'
 
 export const MODOS_CRONOGRAMA: { value: ModoCronograma; label: string; descripcion: string }[] = [
   {
@@ -44,9 +82,6 @@ export const MODOS_CRONOGRAMA: { value: ModoCronograma; label: string; descripci
       'Las fechas se cuentan siempre desde la primera dosis, aunque alguna se haya aplicado tarde.',
   },
 ]
-
-/** Dias de anticipacion con los que una vacunacion empieza a avisar. */
-export const DIAS_AVISO = 15
 
 export type EstadoVacunacion = 'sin_iniciar' | 'al_dia' | 'por_vencer' | 'vencida'
 
@@ -98,7 +133,7 @@ export function diasEntre(a: string, b: string): number {
  */
 export function calcularCronograma(
   dosis: DosisAplicada[],
-  modo: ModoCronograma = 'reajustar',
+  plan: PlanVacunacion = PLAN_POR_DEFECTO,
   hoy: string = hoyISO(),
 ): Cronograma {
   if (dosis.length === 0) {
@@ -121,9 +156,9 @@ export function calcularCronograma(
   // Si no esta cargada (se empezo a registrar por la mitad), se cae a
   // 'reajustar', que solo necesita la anterior.
   const proximaFecha =
-    modo === 'anclar' && primera
-      ? sumarDias(primera.fecha_aplicada, diasDesdePrimera(proximaDosis))
-      : sumarDias(ultima.fecha_aplicada, intervaloHastaSiguiente(ultima.numero_dosis))
+    plan.modo === 'anclar' && primera
+      ? sumarDias(primera.fecha_aplicada, diasDesdePrimera(proximaDosis, plan))
+      : sumarDias(ultima.fecha_aplicada, intervaloHastaSiguiente(ultima.numero_dosis, plan))
 
   const diasRestantes = diasEntre(hoy, proximaFecha)
 
@@ -132,7 +167,8 @@ export function calcularCronograma(
     ultimaFecha: ultima.fecha_aplicada,
     proximaDosis,
     proximaFecha,
-    estado: diasRestantes < 0 ? 'vencida' : diasRestantes <= DIAS_AVISO ? 'por_vencer' : 'al_dia',
+    estado:
+      diasRestantes < 0 ? 'vencida' : diasRestantes <= plan.diasAviso ? 'por_vencer' : 'al_dia',
     diasRestantes,
   }
 }

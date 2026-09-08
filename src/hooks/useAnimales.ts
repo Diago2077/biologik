@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import type {
   Animal,
   AnimalConResumen,
@@ -7,7 +7,7 @@ import type {
   MuestreoFinca,
 } from '@/lib/database.types'
 import { supabase } from '@/lib/supabase'
-import { calcularCronograma, type DosisAplicada, type ModoCronograma } from '@/lib/vacunacion'
+import { calcularCronograma, planDeEmpresa, type DosisAplicada } from '@/lib/vacunacion'
 import { useAuth } from './useAuth'
 
 interface Estado {
@@ -42,7 +42,9 @@ interface FilaConteo {
  */
 export function useAnimales(fincaId: string | undefined) {
   const { empresa } = useAuth()
-  const modo: ModoCronograma = empresa?.modo_cronograma_vacunacion ?? 'reajustar'
+  // Memoizado: es dependencia del useCallback de abajo, y un objeto nuevo en
+  // cada render dispararia una recarga infinita.
+  const plan = useMemo(() => planDeEmpresa(empresa), [empresa])
   const [estado, setEstado] = useState<Estado>({ ...VACIO, loading: true })
 
   const cargar = useCallback(async (): Promise<Estado> => {
@@ -100,7 +102,7 @@ export function useAnimales(fincaId: string | undefined) {
           : null,
         cantidad_muestreos: fechas.length,
         ultimo_conteo: ultimaFecha,
-        cronograma: calcularCronograma(dosisPorAnimal.get(animal.id) ?? [], modo),
+        cronograma: calcularCronograma(dosisPorAnimal.get(animal.id) ?? [], plan),
       }
     })
 
@@ -129,7 +131,7 @@ export function useAnimales(fincaId: string | undefined) {
       .sort((a, b) => b.fecha.localeCompare(a.fecha))
 
     return { data, muestreos, loading: false, error: null }
-  }, [fincaId, modo])
+  }, [fincaId, plan])
 
   const refetch = useCallback(async () => {
     setEstado((s) => ({ ...s, loading: true, error: null }))
